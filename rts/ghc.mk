@@ -195,7 +195,8 @@ else
 ifneq "$$(UseSystemLibFFI)" "YES"
 LIBFFI_LIBS = -Lrts/dist/build -l$$(LIBFFI_NAME)
 ifeq "$$(TargetElf)" "YES"
-LIBFFI_LIBS += -optl-Wl,-rpath -optl-Wl,'$$$$ORIGIN' -optl-Wl,-zorigin
+LIBFFI_LIBS += -optl-Wl,-rpath -optl-Wl,'\$$$$ORIGIN' -optl-Wl,-zorigin
+# TODO: Check if '\$$$$ORIGIN' works with -fasm build path.
 endif
 
 else
