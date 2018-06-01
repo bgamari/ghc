@@ -60,6 +60,7 @@ module DynFlags (
         makeDynFlagsConsistent,
         shouldUseColor,
         shouldUseHexWordLiterals,
+        shouldBuildCoercions,
         positionIndependent,
         optimisationFlags,
 
@@ -1509,6 +1510,14 @@ shouldUseColor dflags = overrideWith (canUseColor dflags) (useColor dflags)
 shouldUseHexWordLiterals :: DynFlags -> Bool
 shouldUseHexWordLiterals dflags =
   Opt_HexWordLiterals `EnumSet.member` generalFlags dflags
+
+-- | Should we generate coercions?
+--
+-- See Note [Zapping coercions] for details.
+shouldBuildCoercions :: DynFlags -> Bool
+shouldBuildCoercions dflags =
+    gopt Opt_DoCoreLinting dflags
+    -- TODO: Add flag to explicitly enable coercion generation without linting?
 
 -- | Are we building with @-fPIE@ or @-fPIC@ enabled?
 positionIndependent :: DynFlags -> Bool

@@ -1963,6 +1963,7 @@ fvCo (KindCo co)            = fvCo co
 fvCo (SubCo co)             = fvCo co
 fvCo (AxiomRuleCo _ cs)     = concatMap fvCo cs
 fvCo (HoleCo h)             = pprPanic "fvCo falls into a hole" (ppr h)
+fvCo (ZappedCo _ _ _ fvs)   = dVarSetElems fvs
 
 fvProv :: UnivCoProvenance -> [TyCoVar]
 fvProv UnsafeCoerceProv    = []

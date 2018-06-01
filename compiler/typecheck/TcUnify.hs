@@ -2298,6 +2298,10 @@ occCheckExpand tv ty
                                              ; return (mkSubCo co') }
     go_co env (AxiomRuleCo ax cs)       = do { cs' <- mapM (go_co env) cs
                                              ; return (mkAxiomRuleCo ax cs') }
+    go_co env (ZappedCo r ty1 ty2 fvs)  = do { ty1' <- go env ty1
+                                             ; ty2' <- go env ty2
+                                             ; return (ZappedCo r ty1' ty2' fvs)
+                                             }
 
     ------------------
     go_prov _   UnsafeCoerceProv    = return UnsafeCoerceProv

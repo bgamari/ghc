@@ -108,6 +108,7 @@ import Var
 import TcRnMonad        -- TcType, amongst others
 import TcEvidence
 import Id
+import DynFlags ( getDynFlags )
 import Name
 import VarSet
 import TysWiredIn
@@ -1317,7 +1318,9 @@ tcGetGlobalTyCoVars
 -- | Zonk a type without using the smart constructors; the result type
 -- is available for inspection within the type-checking knot.
 zonkTcTypeInKnot :: TcType -> TcM TcType
-zonkTcTypeInKnot = mapType (zonkTcTypeMapper { tcm_smart = False }) ()
+zonkTcTypeInKnot ty = do
+    dflags <- getDynFlags
+    mapType dflags (zonkTcTypeMapper { tcm_smart = False }) () ty
 
 zonkTcTypeAndFV :: TcType -> TcM DTyCoVarSet
 -- Zonk a type and take its free variables
@@ -1548,11 +1551,15 @@ zonkTcTypeMapper = TyCoMapper
 -- For tyvars bound at a for-all, zonkType zonks them to an immutable
 --      type variable and zonks the kind too
 zonkTcType :: TcType -> TcM TcType
-zonkTcType = mapType zonkTcTypeMapper ()
+zonkTcType ty = do
+    dflags <- getDynFlags
+    mapType dflags zonkTcTypeMapper () ty
 
 -- | "Zonk" a coercion -- really, just zonk any types in the coercion
 zonkCo :: Coercion -> TcM Coercion
-zonkCo = mapCoercion zonkTcTypeMapper ()
+zonkCo co = do
+    dflags <- getDynFlags
+    mapCoercion dflags zonkTcTypeMapper () co
 
 zonkTcTyCoVarBndr :: TcTyCoVar -> TcM TcTyCoVar
 -- A tyvar binder is never a unification variable (TauTv),

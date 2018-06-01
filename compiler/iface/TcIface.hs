@@ -1362,6 +1362,9 @@ tcIfaceCo = go
     go (IfaceSubCo c)            = SubCo    <$> go c
     go (IfaceAxiomRuleCo ax cos) = AxiomRuleCo <$> tcIfaceCoAxiomRule ax
                                                <*> mapM go cos
+    go (IfaceZappedCo r t1 t2 fvs) = ZappedCo r <$> tcIfaceType t1
+                                                <*> tcIfaceType t2
+                                                <*> fmap mkDVarSet (mapM tcIfaceLclId fvs)
     go (IfaceFreeCoVar c)        = pprPanic "tcIfaceCo:IfaceFreeCoVar" (ppr c)
     go (IfaceHoleCo c)           = pprPanic "tcIfaceCo:IfaceHoleCo"    (ppr c)
 

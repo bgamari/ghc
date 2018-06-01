@@ -953,6 +953,7 @@ exactTyCoVarsOfType ty
     goCo (KindCo co)         = goCo co
     goCo (SubCo co)          = goCo co
     goCo (AxiomRuleCo _ c)   = goCos c
+    goCo (ZappedCo _ t1 t2 _) = go t1 `unionVarSet` go t2
 
     goCos cos = foldr (unionVarSet . goCo) emptyVarSet cos
 

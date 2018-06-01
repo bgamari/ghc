@@ -235,7 +235,7 @@ import Util
 import Outputable
 import FastString
 import Pair
-import DynFlags  ( gopt_set, GeneralFlag(Opt_PrintExplicitRuntimeReps) )
+import DynFlags  ( DynFlags, gopt_set, GeneralFlag(Opt_PrintExplicitRuntimeReps) )
 import ListSetOps
 import Digraph
 import Unique ( nonDetCmpUnique )
@@ -439,6 +439,11 @@ expandTypeSynonyms ty
       = mkSubCo (go_co subst co)
     go_co subst (AxiomRuleCo ax cs)
       = AxiomRuleCo ax (map (go_co subst) cs)
+    go_co subst (ZappedCo r t1 t2 fvs)
+      = let t1' = go subst t1
+            t2' = go subst t2
+            fvs' = fvs `unionDVarSet` tyCoVarsOfTypeDSet t1' `unionDVarSet` tyCoVarsOfTypeDSet t2'
+        in ZappedCo r t1' t2' fvs'
     go_co _ (HoleCo h)
       = pprPanic "expandTypeSynonyms hit a hole" (ppr h)
 
@@ -509,8 +514,9 @@ data TyCoMapper env m
       }
 
 {-# INLINABLE mapType #-}  -- See Note [Specialising mappers]
-mapType :: Monad m => TyCoMapper env m -> env -> Type -> m Type
-mapType mapper@(TyCoMapper { tcm_smart = smart, tcm_tyvar = tyvar
+mapType :: Monad m => DynFlags -> TyCoMapper env m -> env -> Type -> m Type
+mapType dflags
+        mapper@(TyCoMapper { tcm_smart = smart, tcm_tyvar = tyvar
                            , tcm_tybinder = tybinder })
         env ty
   = go ty
@@ -523,11 +529,11 @@ mapType mapper@(TyCoMapper { tcm_smart = smart, tcm_tyvar = tyvar
     go (FunTy arg res)   = FunTy <$> go arg <*> go res
     go (ForAllTy (TvBndr tv vis) inner)
       = do { (env', tv') <- tybinder env tv vis
-           ; inner' <- mapType mapper env' inner
+           ; inner' <- mapType dflags mapper env' inner
            ; return $ ForAllTy (TvBndr tv' vis) inner' }
     go ty@(LitTy {})   = return ty
-    go (CastTy ty co)  = mkcastty <$> go ty <*> mapCoercion mapper env co
-    go (CoercionTy co) = CoercionTy <$> mapCoercion mapper env co
+    go (CastTy ty co)  = mkcastty <$> go ty <*> mapCoercion dflags mapper env co
+    go (CoercionTy co) = CoercionTy <$> mapCoercion dflags mapper env co
 
     (mktyconapp, mkappty, mkcastty)
       | smart     = (mkTyConApp, mkAppTy, mkCastTy)
@@ -535,20 +541,22 @@ mapType mapper@(TyCoMapper { tcm_smart = smart, tcm_tyvar = tyvar
 
 {-# INLINABLE mapCoercion #-}  -- See Note [Specialising mappers]
 mapCoercion :: Monad m
-            => TyCoMapper env m -> env -> Coercion -> m Coercion
-mapCoercion mapper@(TyCoMapper { tcm_smart = smart, tcm_covar = covar
-                               , tcm_hole = cohole, tcm_tybinder = tybinder })
+            => DynFlags -> TyCoMapper env m -> env -> Coercion -> m Coercion
+mapCoercion dflags
+            mapper@(TyCoMapper { tcm_smart = smart, tcm_covar = covar
+                               , tcm_tyvar = tyvar, tcm_hole = cohole
+                               , tcm_tybinder = tybinder })
             env co
-  = go co
+  = zapCoercion dflags <$> go co
   where
-    go (Refl r ty) = Refl r <$> mapType mapper env ty
+    go (Refl r ty) = Refl r <$> mapType dflags mapper env ty
     go (TyConAppCo r tc args)
       = mktyconappco r tc <$> mapM go args
     go (AppCo c1 c2) = mkappco <$> go c1 <*> go c2
     go (ForAllCo tv kind_co co)
       = do { kind_co' <- go kind_co
            ; (env', tv') <- tybinder env tv Inferred
-           ; co' <- mapCoercion mapper env' co
+           ; co' <- mapCoercion dflags mapper env' co
            ; return $ mkforallco tv' kind_co' co' }
         -- See Note [Efficiency for mapCoercion ForAllCo case]
     go (FunCo r c1 c2) = mkFunCo r <$> go c1 <*> go c2
@@ -558,7 +566,8 @@ mapCoercion mapper@(TyCoMapper { tcm_smart = smart, tcm_covar = covar
     go (HoleCo hole) = cohole env hole
     go (UnivCo p r t1 t2)
       = mkunivco <$> go_prov p <*> pure r
-                 <*> mapType mapper env t1 <*> mapType mapper env t2
+                 <*> mapType dflags mapper env t1
+                 <*> mapType dflags mapper env t2
     go (SymCo co) = mksymco <$> go co
     go (TransCo c1 c2) = mktransco <$> go c1 <*> go c2
     go (AxiomRuleCo r cos) = AxiomRuleCo r <$> mapM go cos
@@ -568,6 +577,16 @@ mapCoercion mapper@(TyCoMapper { tcm_smart = smart, tcm_covar = covar
     go (CoherenceCo c1 c2) = mkcoherenceco <$> go c1 <*> go c2
     go (KindCo co)         = mkkindco <$> go co
     go (SubCo co)          = mksubco <$> go co
+    go (ZappedCo r t1 t2 fvs) = do t1' <- mapType dflags mapper env t1
+                                   t2' <- mapType dflags mapper env t2
+                                   let bndrFVs v
+                                         | isTyVar v = tyCoVarsOfTypeDSet <$> tyvar env v
+                                         | isCoVar v = tyCoVarsOfCoDSet <$> covar env v
+                                         | otherwise = pprPanic "mapCoercion(ZappedCo)" (ppr v)
+                                   fvs' <- unionDVarSets <$> mapM bndrFVs (dVarSetElems fvs)
+                                   let fvs'' = fvs' `unionDVarSet` tyCoVarsOfTypeDSet t1'
+                                                    `unionDVarSet` tyCoVarsOfTypeDSet t2'
+                                   return $ ZappedCo r t1' t2' fvs''
 
     go_prov UnsafeCoerceProv    = return UnsafeCoerceProv
     go_prov (PhantomProv co)    = PhantomProv <$> go co
@@ -2399,6 +2418,7 @@ tyConsOfType ty
      go_co (KindCo co)             = go_co co
      go_co (SubCo co)              = go_co co
      go_co (AxiomRuleCo _ cs)      = go_cos cs
+     go_co (ZappedCo _ t1 t2 _)    = go t1 `unionUniqSets` go t2
 
      go_prov UnsafeCoerceProv    = emptyUniqSet
      go_prov (PhantomProv co)    = go_co co

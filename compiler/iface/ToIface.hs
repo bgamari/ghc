@@ -253,6 +253,9 @@ toIfaceCoercionX fr co
                                           (toIfaceCoercionX fr' co)
                           where
                             fr' = fr `delVarSet` tv
+    go (ZappedCo r ty1 ty2 fvs) = IfaceZappedCo r (toIfaceTypeX fr ty1)
+                                                  (toIfaceTypeX fr ty2)
+                                                  (map toIfaceTyVar $ dVarSetElems fvs)
 
     go_prov :: UnivCoProvenance -> IfaceUnivCoProv
     go_prov UnsafeCoerceProv    = IfaceUnsafeCoerceProv

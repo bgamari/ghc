@@ -1642,6 +1642,7 @@ allTyVarsInTy = go
     go_co (KindCo co)           = go_co co
     go_co (SubCo co)            = go_co co
     go_co (AxiomRuleCo _ cs)    = go_cos cs
+    go_co (ZappedCo _ t1 t2 fvs) = go t1 `unionVarSet` go t2 `unionVarSet` dVarSetToVarSet (filterDVarSet isTyVar fvs)
 
     go_cos = foldr (unionVarSet . go_co) emptyVarSet
 

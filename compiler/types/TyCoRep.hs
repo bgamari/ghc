@@ -35,6 +35,7 @@ module TyCoRep (
         CoercionHole(..), coHoleCoVar, setCoHoleCoVar,
         CoercionN, CoercionR, CoercionP, KindCoercion,
         MCoercion(..), MCoercionR,
+        zapCoercion, zapCoercionWithFVs,
 
         -- * Functions over types
         mkTyConTy, mkTyVarTy, mkTyVarTys,
@@ -117,6 +118,7 @@ module TyCoRep (
         substCoVarBndr, cloneTyVarBndr, cloneTyVarBndrs,
         substTyVar, substTyVars,
         substForAllCoBndr,
+        substFreeDVarSet,
         substTyVarBndrCallback, substForAllCoBndrCallback,
         checkValidSubst, isValidTCvSubst,
 
@@ -936,6 +938,11 @@ data Coercion
 
   | HoleCo CoercionHole              -- ^ See Note [Coercion holes]
                                      -- Only present during typechecking
+
+  | ZappedCo Role Type Type DVarSet
+    -- ^ A coercions which we have elided; includes it's role, kind and free
+    -- variables.
+
   deriving Data.Data
 
 type CoercionN = Coercion       -- always nominal
@@ -1466,7 +1473,53 @@ Here,
     co5 :: (a1 ~ Bool) ~ (a2 ~ Bool)
     co5 = TyConAppCo Nominal (~) [<*>, <*>, co4, <Bool>]
 
+-}
 
+{-
+%************************************************************************
+%*                                                                      *
+                 Zapping coercions into oblivion
+%*                                                                      *
+%************************************************************************
+-}
+
+{- Note [Zapping coercions]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Coercions for even small programs can grow to be quite large (e.g. #8095). For
+instance, the case of addition of inductive naturals can build coercions
+quadratic in size of the addends. Moreover, coercions are really only useful
+to validate core transformations (i.e. by the Core Linter). To avoid burdening
+users who aren't linting with the cost of maintaining these structures, we
+replace coercions with placeholders ("zap" them) them unless -dcore-lint is
+enabled.
+
+This zapping is done by zapCoercion. Moreover, naively reducing recursive type families
+will often require that we carry out a quadratic amount of work (performing a
+full traversal of the coercion after each reduction step). To avoid this, we
+special-case type family reduction (namely in
+TcFlatten.flatten_exact_fam_app_fully), computing the free variables of the
+unreduced type and using this as the free variable set of each of the zapped
+coercions. This is a conservative approximation, bringing more variables into
+the free variable set than strictly necessary. However, it allows us to get away
+with doing only linear work.
+
+-}
+
+-- | Replace a coercion with a 'ZappedCoercion' unless coercions are needed.
+zapCoercion :: DynFlags -> Coercion -> Coercion
+zapCoercion dflags co = zapCoercionWithFVs dflags (tyCoFVsOfCo co) co
+
+-- | Replace a coercion with a 'ZappedCoercion' unless coercions are needed,
+-- using the provided free-variable set.
+zapCoercionWithFVs :: DynFlags -> FV -> Coercion -> Coercion
+zapCoercionWithFVs dflags fvs co
+  | shouldBuildCoercions dflags = co
+  | otherwise =
+        let (Pair t1 t2, role) = coercionKindRole co
+        in ZappedCo role t1 t2 (fvDVarSet fvs)
+
+{-
 %************************************************************************
 %*                                                                      *
                  Free variables of types and coercions
@@ -1613,6 +1666,7 @@ tyCoFVsOfCo (CoherenceCo c1 c2) fv_cand in_scope acc = (tyCoFVsOfCo c1 `unionFV`
 tyCoFVsOfCo (KindCo co)         fv_cand in_scope acc = tyCoFVsOfCo co fv_cand in_scope acc
 tyCoFVsOfCo (SubCo co)          fv_cand in_scope acc = tyCoFVsOfCo co fv_cand in_scope acc
 tyCoFVsOfCo (AxiomRuleCo _ cs)  fv_cand in_scope acc = tyCoFVsOfCos cs fv_cand in_scope acc
+tyCoFVsOfCo (ZappedCo _ _ _ vs)  fv_cand in_scope acc = (mkFVs $ dVarSetElems vs) fv_cand in_scope acc -- TODO: This is terrible
 
 tyCoFVsOfCoVar :: CoVar -> FV
 tyCoFVsOfCoVar v fv_cand in_scope acc
@@ -1676,6 +1730,7 @@ coVarsOfCo (CoherenceCo c1 c2)  = coVarsOfCos [c1, c2]
 coVarsOfCo (KindCo co)          = coVarsOfCo co
 coVarsOfCo (SubCo co)           = coVarsOfCo co
 coVarsOfCo (AxiomRuleCo _ cs)   = coVarsOfCos cs
+coVarsOfCo (ZappedCo _ _ _ fvs)  = dVarSetToVarSet $ filterDVarSet isCoVar fvs
 
 coVarsOfCoVar :: CoVar -> CoVarSet
 coVarsOfCoVar v = unitVarSet v `unionVarSet` coVarsOfType (varType v)
@@ -1783,6 +1838,7 @@ noFreeVarsOfCo (CoherenceCo co1 co2)  = noFreeVarsOfCo co1 && noFreeVarsOfCo co2
 noFreeVarsOfCo (KindCo co)            = noFreeVarsOfCo co
 noFreeVarsOfCo (SubCo co)             = noFreeVarsOfCo co
 noFreeVarsOfCo (AxiomRuleCo _ cs)     = all noFreeVarsOfCo cs
+noFreeVarsOfCo (ZappedCo _ _ _ fvs)   = isEmptyDVarSet fvs
 
 -- | Returns True if this UnivCoProv has no free variables. Should be the same as
 -- isEmptyVarSet . tyCoVarsOfProv, but faster in the non-forall case.
@@ -2465,6 +2521,7 @@ subst_co subst co
     go (SubCo co)            = mkSubCo $! (go co)
     go (AxiomRuleCo c cs)    = let cs1 = map go cs
                                 in cs1 `seqList` AxiomRuleCo c cs1
+    go (ZappedCo r t1 t2 fvs) = ZappedCo r (go_ty t1) (go_ty t2) (substFreeDVarSet subst fvs)
     go (HoleCo h)            = HoleCo h
       -- NB: this last case is a little suspicious, but we need it. Originally,
       -- there was a panic here, but it triggered from deeplySkolemise. Because
@@ -2477,6 +2534,15 @@ subst_co subst co
     go_prov (PhantomProv kco)    = PhantomProv (go kco)
     go_prov (ProofIrrelProv kco) = ProofIrrelProv (go kco)
     go_prov p@(PluginProv _)     = p
+
+-- | Perform a substitution within a 'DVarSet' of free variables.
+substFreeDVarSet :: TCvSubst -> DVarSet -> DVarSet
+substFreeDVarSet subst =
+    let f v
+          | isTyVar v = tyCoVarsOfTypeDSet $ substTyVar subst v
+          | isCoVar v = tyCoVarsOfCoDSet $ substCoVar subst v
+          | otherwise = pprPanic "subst_co(ZappedCo)" (ppr v)
+    in mapUnionDVarSet f . dVarSetElems
 
 substForAllCoBndr :: TCvSubst -> TyVar -> Coercion -> (TCvSubst, TyVar, Coercion)
 substForAllCoBndr subst
@@ -2518,14 +2584,15 @@ substForAllCoBndrCallback sym sco (TCvSubst in_scope tenv cenv)
 
 substCoVar :: TCvSubst -> CoVar -> Coercion
 substCoVar (TCvSubst _ _ cenv) cv
-  = case lookupVarEnv cenv cv of
+  = ASSERT( isCoVar cv )
+    case lookupVarEnv cenv cv of
       Just co -> co
       Nothing -> CoVarCo cv
 
 substCoVars :: TCvSubst -> [CoVar] -> [Coercion]
 substCoVars subst cvs = map (substCoVar subst) cvs
 
-lookupCoVar :: TCvSubst -> Var  -> Maybe Coercion
+lookupCoVar :: TCvSubst -> CoVar  -> Maybe Coercion
 lookupCoVar (TCvSubst _ _ cenv) v = lookupVarEnv cenv v
 
 substTyVarBndr :: HasCallStack => TCvSubst -> TyVar -> (TCvSubst, TyVar)
@@ -3065,6 +3132,8 @@ tidyCo env@(_, subst) co
     go (SubCo co)            = SubCo $! go co
     go (AxiomRuleCo ax cos)  = let cos1 = tidyCos env cos
                                in cos1 `seqList` AxiomRuleCo ax cos1
+    go (ZappedCo r t1 t2 fvs) = let fvs' = mapUnionDVarSet (unitDVarSet . tidyTyVarOcc env) (dVarSetElems fvs)
+                                in ((ZappedCo r $! tidyType env t1) $! tidyType env t2) $! fvs'
 
     go_prov UnsafeCoerceProv    = UnsafeCoerceProv
     go_prov (PhantomProv co)    = PhantomProv (go co)
@@ -3123,6 +3192,7 @@ coercionSize (CoherenceCo c1 c2) = 1 + coercionSize c1 + coercionSize c2
 coercionSize (KindCo co)         = 1 + coercionSize co
 coercionSize (SubCo co)          = 1 + coercionSize co
 coercionSize (AxiomRuleCo _ cs)  = 1 + sum (map coercionSize cs)
+coercionSize (ZappedCo _ t1 t2 _) = 1 + typeSize t1 + typeSize t2
 
 provSize :: UnivCoProvenance -> Int
 provSize UnsafeCoerceProv    = 1

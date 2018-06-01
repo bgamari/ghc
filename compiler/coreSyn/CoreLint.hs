@@ -1919,6 +1919,10 @@ lintCoercion (HoleCo h)
   = do { addErrL $ text "Unfilled coercion hole:" <+> ppr h
        ; lintCoercion (CoVarCo (coHoleCoVar h)) }
 
+lintCoercion (ZappedCo r ty1 ty2 _)
+  = do { k1 <- lintType ty1
+       ; k2 <- lintType ty2
+       ; return (k1, k2, ty1, ty2, r) }
 
 ----------
 lintUnliftedCoVar :: CoVar -> LintM ()

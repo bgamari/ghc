@@ -386,6 +386,7 @@ orphNamesOfCo (CoherenceCo co1 co2) = orphNamesOfCo co1 `unionNameSet` orphNames
 orphNamesOfCo (KindCo co)           = orphNamesOfCo co
 orphNamesOfCo (SubCo co)            = orphNamesOfCo co
 orphNamesOfCo (AxiomRuleCo _ cs)    = orphNamesOfCos cs
+orphNamesOfCo (ZappedCo _ t1 t2 _)  = orphNamesOfType t1 `unionNameSet` orphNamesOfType t2
 orphNamesOfCo (HoleCo _)            = emptyNameSet
 
 orphNamesOfProv :: UnivCoProvenance -> NameSet

@@ -1707,13 +1707,18 @@ zonk_tycomapper = TyCoMapper
 
 -- Confused by zonking? See Note [What is zonking?] in TcMType.
 zonkTcTypeToType :: ZonkEnv -> TcType -> TcM Type
-zonkTcTypeToType = mapType zonk_tycomapper
+zonkTcTypeToType env ty = do
+    dflags <- getDynFlags
+    mapType dflags zonk_tycomapper env ty
 
 zonkTcTypeToTypes :: ZonkEnv -> [TcType] -> TcM [Type]
 zonkTcTypeToTypes env tys = mapM (zonkTcTypeToType env) tys
 
 zonkCoToCo :: ZonkEnv -> Coercion -> TcM Coercion
-zonkCoToCo = mapCoercion zonk_tycomapper
+zonkCoToCo env co = do
+    dflags <- getDynFlags
+    -- See Note [Zapping coercions]
+    zapCoercion dflags <$> mapCoercion dflags zonk_tycomapper env co
 
 zonkSigType :: TcType -> TcM Type
 -- Zonk the type obtained from a user type signature

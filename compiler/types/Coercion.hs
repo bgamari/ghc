@@ -95,6 +95,9 @@ module Coercion (
         -- ** Forcing evaluation of coercions
         seqCo,
 
+        -- ** Eliminating coercions
+        zapCoercion, zapCoercionWithFVs,
+
         -- * Pretty-printing
         pprCo, pprParendCo,
         pprCoAxiom, pprCoAxBranch, pprCoAxBranchHdr,
@@ -1272,6 +1275,9 @@ promoteCoercion co = case co of
     SubCo g
       -> promoteCoercion g
 
+    ZappedCo r t1 t2 fvs
+      -> ZappedCo r (typeKind t1) (typeKind t2) fvs -- TODO are these fvs sufficient?
+
   where
     Pair ty1 ty2 = coercionKind co
     ki1 = typeKind ty1
@@ -1797,6 +1803,7 @@ seqCo (CoherenceCo co1 co2)     = seqCo co1 `seq` seqCo co2
 seqCo (KindCo co)               = seqCo co
 seqCo (SubCo co)                = seqCo co
 seqCo (AxiomRuleCo _ cs)        = seqCos cs
+seqCo (ZappedCo r t1 t2 fvs)    = r `seq` seqType t1 `seq` seqType t2 `seq` fvs `seq` ()
 
 seqProv :: UnivCoProvenance -> ()
 seqProv UnsafeCoerceProv    = ()
@@ -1896,6 +1903,7 @@ coercionKind co =
     go (SubCo co)           = go co
     go (AxiomRuleCo ax cos) = expectJust "coercionKind" $
                               coaxrProves ax (map go cos)
+    go (ZappedCo _ ty1 ty2 _) = Pair ty1 ty2
 
     go_app :: Coercion -> [Coercion] -> Pair Type
     -- Collect up all the arguments and apply all at once
@@ -1963,6 +1971,7 @@ coercionRole = go
     go (KindCo {}) = Nominal
     go (SubCo _) = Representational
     go (AxiomRuleCo ax _) = coaxrRole ax
+    go (ZappedCo r _ _ _) = r
 
 {-
 Note [Nested InstCos]
