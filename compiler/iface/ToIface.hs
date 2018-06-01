@@ -255,7 +255,13 @@ toIfaceCoercionX fr co
                             fr' = fr `delVarSet` tv
     go (ZappedCo r ty1 ty2 fvs) = IfaceZappedCo r (toIfaceTypeX fr ty1)
                                                   (toIfaceTypeX fr ty2)
-                                                  (map toIfaceTyVar $ dVarSetElems fvs)
+                                                  (map toIfaceTyVar tvs)
+                                                  (map toIfaceCoVar cvs)
+                          where
+                            (tvs, cvs) = partitionWith f $ dVarSetElems fvs
+                            f v | isTyVar v = Left v
+                                | isCoVar v = Right v
+                                | otherwise = panic "asdfaf"
 
     go_prov :: UnivCoProvenance -> IfaceUnivCoProv
     go_prov UnsafeCoerceProv    = IfaceUnsafeCoerceProv

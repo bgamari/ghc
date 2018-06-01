@@ -303,7 +303,8 @@ data IfaceCoercion
   | IfaceSubCo        IfaceCoercion
   | IfaceFreeCoVar    CoVar    -- See Note [Free tyvars in IfaceType]
   | IfaceHoleCo       CoVar    -- ^ See Note [Holes in IfaceCoercion]
-  | IfaceZappedCo     Role IfaceType IfaceType [IfLclName]
+  | IfaceZappedCo     Role IfaceType IfaceType [IfLclName] [IfLclName]
+                               -- ^ ty1, ty2, free tvs, free cvs
 
 data IfaceUnivCoProv
   = IfaceUnsafeCoerceProv
@@ -462,7 +463,8 @@ substIfaceType env ty
     go_co (IfaceKindCo co)           = IfaceKindCo (go_co co)
     go_co (IfaceSubCo co)            = IfaceSubCo (go_co co)
     go_co (IfaceAxiomRuleCo n cos)   = IfaceAxiomRuleCo n (go_cos cos)
-    go_co (IfaceZappedCo r t1 t2 _)  = IfaceZappedCo r t1 t2
+    go_co (IfaceZappedCo r t1 t2 _ _)= IfaceZappedCo r t1 t2
+                                         (panic "substIfaceType(IfaceZappedCo): Invalid FVs")
                                          (panic "substIfaceType(IfaceZappedCo): Invalid FVs")
                                          -- N.B. free variables aren't handled
                                          -- but this shouldn't matter since this
@@ -1231,7 +1233,7 @@ ppr_co ctxt_prec (IfaceCoherenceCo co1 co2)
   = ppr_special_co ctxt_prec (text "Coh") [co1,co2]
 ppr_co ctxt_prec (IfaceKindCo co)
   = ppr_special_co ctxt_prec (text "Kind") [co]
-ppr_co ctxt_prec (IfaceZappedCo r ty1 ty2 _)
+ppr_co ctxt_prec (IfaceZappedCo r ty1 ty2 _ _)
   = ppr_special_co ctxt_prec (text "Zapped" <> brackets (ppr r $$ ppr ty1 $$ ppr ty2)) []
 
 ppr_special_co :: PprPrec -> SDoc -> [IfaceCoercion] -> SDoc
@@ -1532,12 +1534,13 @@ instance Binary IfaceCoercion where
           putByte bh 17
           put_ bh a
           put_ bh b
-  put_ bh (IfaceZappedCo r t1 t2 fvs) = do
+  put_ bh (IfaceZappedCo r t1 t2 tyFvs coFvs) = do
           putByte bh 18
           put_ bh r
           put_ bh t1
           put_ bh t2
-          put_ bh fvs
+          put_ bh tyFvs
+          put_ bh coFvs
   put_ _ (IfaceFreeCoVar cv)
        = pprPanic "Can't serialise IfaceFreeCoVar" (ppr cv)
   put_ _  (IfaceHoleCo cv)
@@ -1604,7 +1607,8 @@ instance Binary IfaceCoercion where
                    b <- get bh
                    c <- get bh
                    d <- get bh
-                   return $ IfaceZappedCo a b c d
+                   e <- get bh
+                   return $ IfaceZappedCo a b c d e
            _ -> panic ("get IfaceCoercion " ++ show tag)
 
 instance Binary IfaceUnivCoProv where
