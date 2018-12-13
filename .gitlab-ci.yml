@@ -7,11 +7,28 @@ before_script:
   - git submodule update --init --recursive
   - git checkout .gitmodules
 
+stages:
+  - lint
+  - build
+
+############################################################
+# Linting
+############################################################
+
+ghc-linters:
+  stage: lint
+  image: ghcci/linters:0.1
+  script:
+    - validate-commit-msg . $(git rev-list $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA)
+    - submodchecker . $(git rev-list $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA)
+    - validate-whitespace . $(git rev-list $CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA)
+
 ############################################################
 # Validation via Pipelines (hadrian)
 ############################################################
 
 .validate-hadrian:
+  stage: build
   allow_failure: true
   script:
     - bash .circleci/prepare-system.sh
@@ -38,6 +55,7 @@ validate-x86_64-linux-deb8-hadrian:
 ############################################################
 
 .validate:
+  stage: build
   allow_failure: true
   script:
     - make clean || true
@@ -163,6 +181,7 @@ validate-x86_64-linux-deb9-unreg:
 ############################################################
 
 .validate-x86_64-windows:
+  stage: build
   variables:
     GHC_VERSION: "8.6.2"
   script:
@@ -193,6 +212,7 @@ validate-x86_64-linux-deb9-unreg:
 ############################################################
 
 .circleci:
+  stage: build
   image: ghcci/x86_64-linux-deb8:0.1
   artifacts:
     when: always
