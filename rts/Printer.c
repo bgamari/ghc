@@ -710,13 +710,13 @@ void printLargeAndPinnedObjects()
         debugBelch("Generation %d current large objects:\n", gen_idx);
         for (bdescr *bd = gen->large_objects; bd; bd = bd->link) {
             debugBelch("%p: ", (void*)bd);
-            printClosure((StgClosure*)bd->start);
+            printClosure((StgClosure*)bdescr_start(bd));
         }
 
         debugBelch("Generation %d scavenged large objects:\n", gen_idx);
         for (bdescr *bd = gen->scavenged_large_objects; bd; bd = bd->link) {
             debugBelch("%p: ", (void*)bd);
-            printClosure((StgClosure*)bd->start);
+            printClosure((StgClosure*)bdescr_start(bd));
         }
     }
 

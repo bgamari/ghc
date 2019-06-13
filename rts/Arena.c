@@ -122,7 +122,7 @@ void checkPtrInArena( StgPtr p, Arena *arena )
 {
     // We don't update free pointers of arena blocks, so we have to check cached
     // free pointer for the first block.
-    if (p >= arena->current->start && p < arena->free) {
+    if (p >= bdescr_start(arena->current) && p < arena->free) {
         return;
     }
 
@@ -130,7 +130,8 @@ void checkPtrInArena( StgPtr p, Arena *arena )
     // slop at the end). Again, free pointers are not updated so we can't use
     // those.
     for (bdescr *bd = arena->current->link; bd; bd = bd->link) {
-        if (p >= bd->start && p < bd->start + (bd->blocks*BLOCK_SIZE_W)) {
+        StgPtr start = bdescr_start(bd);
+        if (p >= start && p < start + (bd->blocks*BLOCK_SIZE_W)) {
             return;
         }
     }

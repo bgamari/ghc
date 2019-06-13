@@ -332,7 +332,6 @@ split_block_high (bdescr *bd, W_ n)
 
     bdescr* ret = bd + bd->blocks - n; // take n blocks off the end
     ret->blocks = n;
-    ret->start = ret->free = bd->start + (bd->blocks - n)*BLOCK_SIZE_W;
     ret->link = NULL;
 
     bd->blocks -= n;
@@ -353,7 +352,6 @@ split_block_low (bdescr *bd, W_ n)
 
     bdescr* bd_ = bd + n;
     bd_->blocks = bd->blocks - n;
-    bd_->start = bd_->free = bd->start + n*BLOCK_SIZE_W;
 
     bd->blocks = n;
 
@@ -547,8 +545,8 @@ allocAlignedGroupOnNode (uint32_t node, W_ n)
 
     // slop on the low side
     W_ slop_low = 0;
-    if ((uintptr_t)bd->start % group_size != 0) {
-        slop_low = group_size - ((uintptr_t)bd->start % group_size);
+    if ((uintptr_t)bdescr_start(bd) % group_size != 0) {
+        slop_low = group_size - ((uintptr_t)bdescr_start(bd) % group_size);
     }
 
     W_ slop_high = (num_blocks * BLOCK_SIZE) - group_size - slop_low;
@@ -577,7 +575,7 @@ allocAlignedGroupOnNode (uint32_t node, W_ n)
 #endif
 
     // At this point the bd should be aligned, but we may have slop on the high side
-    ASSERT((uintptr_t)bd->start % group_size == 0);
+    ASSERT((uintptr_t)bdescr_start(bd) % group_size == 0);
 
 #if defined(DEBUG)
     free_before = countFreeList();
@@ -594,10 +592,7 @@ allocAlignedGroupOnNode (uint32_t node, W_ n)
 #endif
 
     // Should still be aligned
-    ASSERT((uintptr_t)bd->start % group_size == 0);
-
-    // Just to make sure I get this right
-    ASSERT(Bdescr(bd->start) == bd);
+    ASSERT((uintptr_t)bdescr_start(bd) % group_size == 0);
 
     return bd;
 }
