@@ -1645,7 +1645,7 @@ collect_pinned_object_blocks (void)
                 bd->flags |= BF_NONMOVING;
                 bd->gen = oldest_gen;
                 bd->gen_no = oldest_gen->no;
-                oldest_gen->n_large_words += bd->free - bdescr_start(bd);
+                oldest_gen->n_large_words += bdescr_free(bd) - bdescr_start(bd);
                 oldest_gen->n_large_blocks += bd->blocks;
                 last = bd;
             }
