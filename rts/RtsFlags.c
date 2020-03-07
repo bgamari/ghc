@@ -935,10 +935,12 @@ error = true;
                   else if (strequal("force-barrier", &rts_argv[arg][2])) {
                       // Forcibly enable the non-moving write barrier.
                       // Not to be used with --nonmoving-gc.
+                      OPTION_UNSAFE;
                       RtsFlags.GcFlags.forceBarrier = true;
                       nonmoving_write_barrier_enabled = true;
                   }
                   else if (strequal("no-aging", &rts_argv[arg][2])) {
+                      OPTION_UNSAFE;
                       RtsFlags.GcFlags.noAging = true;
                   }
                   else if (strequal("nonmoving-gc",

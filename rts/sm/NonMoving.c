@@ -604,7 +604,6 @@ static void free_nonmoving_allocator(struct NonmovingAllocator *alloc)
 
 void nonmovingInit(void)
 {
-    if (! RtsFlags.GcFlags.useNonmoving) return;
 #if defined(THREADED_RTS)
     initMutex(&nonmoving_collection_mutex);
     initCondition(&concurrent_coll_finished);
@@ -632,8 +631,6 @@ void nonmovingStop(void)
 
 void nonmovingExit(void)
 {
-    if (! RtsFlags.GcFlags.useNonmoving) return;
-
     // First make sure collector is stopped before we tear things down.
     nonmovingStop();
 
