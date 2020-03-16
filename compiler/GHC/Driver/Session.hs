@@ -1434,7 +1434,7 @@ defaultDynFlags mySettings llvmConfig =
         -- into Csg.calc (The unfolding for sqr never makes it into the
         -- interface file.)
         ufCreationThreshold = 750,
-        ufUseThreshold      = 75,
+        ufUseThreshold       = 80,
         ufFunAppDiscount    = 60,
         -- Be fairly keen to inline a function if that means
         -- we'll be able to pick the right method from a dictionary
