@@ -896,18 +896,21 @@ addFingerprints hsc_env iface0
                return (env', (hash,decl) : decls_w_hashes)
 
        fingerprint_group (local_env, decls_w_hashes) (CyclicSCC abis)
-          = do let decls = map abiDecl abis
+          = do let stable_decls = sortBy (stableNameCmp `on` ifName) $ map abiDecl abis
                local_env1 <- foldM extend_hash_env local_env
-                                   (zip (map mkRecFingerprint [0..]) decls)
+                                   (zip (map mkRecFingerprint [0..]) stable_decls)
+               pprTraceM "fingerprint_group1" (ppr stable_decls)
                 -- See Note [Fingerprinting recursive groups]
                let hash_fn = mk_put_name local_env1
                -- pprTrace "fingerprinting" (ppr (map ifName decls) ) $ do
                let stable_abis = sortBy cmp_abiNames abis
+               pprTraceM "fingerprint_group2" (ppr stable_abis)
                 -- put the cycle in a canonical order
                hash <- computeFingerprint hash_fn stable_abis
-               let pairs = zip (map (bumpFingerprint hash) [0..]) decls
+               let pairs = zip (map (bumpFingerprint hash) [0..]) stable_decls
                 -- See Note [Fingerprinting recursive groups]
                local_env2 <- foldM extend_hash_env local_env pairs
+               pprTraceM "fingerprint_group3" (ppr pairs)
                return (local_env2, pairs ++ decls_w_hashes)
 
 
