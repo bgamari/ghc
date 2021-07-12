@@ -381,10 +381,6 @@ rts_CC_OPTS += -DNOSMP
 rts_HC_OPTS += -optc-DNOSMP
 endif
 
-ifeq "$(UseLibFFIForAdjustors)" "YES"
-rts_CC_OPTS += -DUSE_LIBFFI_FOR_ADJUSTORS
-endif
-
 # We *want* type-checking of hand-written cmm.
 rts_HC_OPTS += -dcmm-lint
 
