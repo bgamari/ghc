@@ -323,6 +323,8 @@ UseSystemLibFFI=@UseSystemLibFFI@
 FFILibDir=@FFILibDir@
 FFIIncludeDir=@FFIIncludeDir@
 
+UseLibffiForAdjustors=@UseLibffiForAdjustors@
+
 UseLibdw=@UseLibdw@
 LibdwLibDir=@LibdwLibDir@
 LibdwIncludeDir=@LibdwIncludeDir@
