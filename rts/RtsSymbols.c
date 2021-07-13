@@ -12,7 +12,6 @@
 #include "Rts.h"
 #include "TopHandler.h"
 #include "HsFFI.h"
-#include "ExecPage.h"
 
 #include "sm/Storage.h"
 #include "sm/NonMovingMark.h"
