@@ -36,6 +36,8 @@ and C resources. Failure to do so will result in memory leaks on both the C and
 Haskell side.
 */
 
+#include "Adjustor.h"
+
 int totalArgumentSize(const char *typeString)
 {
     int sz = 0;
