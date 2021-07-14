@@ -7,6 +7,7 @@
 
 #include "RtsUtils.h"
 #include "StablePtr.h"
+#include "sm/Storage.h"
 
 #include "ffi.h"
 #include <string.h>
