@@ -84,12 +84,10 @@ createAdjustor(int cconv, StgStablePtr hptr,
         */
         ExecPage *page = allocateExecPage();
         AdjustorStub *adjustorStub = (AdjustorStub *) page;
-        adjustor = page;
-
         int sz = totalArgumentSize(typeString);
 
         adjustorStub->call[0] = 0xe8;
-        *(long*)&adjustorStub->call[1] = ((char*)&adjustorCode) - ((char*)code + 5);
+        *(long*)&adjustorStub->call[1] = ((char*)&adjustorCode) - ((char*)page + 5);
         adjustorStub->hptr = hptr;
         adjustorStub->wptr = wptr;
 
