@@ -92,7 +92,6 @@ uint32_t n_nurseries;
 
 #define PINNED_EMPTY_SIZE BLOCKS_PER_MBLOCK
 
-
 /*
  * When we are using nursery chunks, we need a separate next_nursery
  * pointer for each NUMA node.
@@ -1082,13 +1081,19 @@ allocate (Capability *cap, W_ n)
 
 /*
  * Allocate some n words of heap memory; returning NULL
- * on heap overflow
+ * on heap overflow'
  */
 StgPtr
 allocateMightFail (Capability *cap, W_ n)
 {
-    bdescr *bd;
     StgPtr p;
+    
+    if (noGC) {
+        p = malloc(n*sizeof(W_));
+        return p;
+    }
+
+    bdescr *bd;
 
     if (RTS_UNLIKELY(n >= LARGE_OBJECT_THRESHOLD/sizeof(W_))) {
         // The largest number of words such that
@@ -1237,6 +1242,8 @@ allocateMightFail (Capability *cap, W_ n)
 StgPtr
 allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ align_off /*bytes*/)
 {
+    // Pinned: make sure GC doesn't move
+
     StgPtr p;
     bdescr *bd;
 
@@ -1255,11 +1262,13 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
         // allocated for alignment reasons. Here we just allocate the maximum
         // number of extra words we could possibly need to satisfy the alignment
         // constraint.
-        p = allocateMightFail(cap, n + alignment_w - 1);
+        // p = allocateMightFail(cap, n + alignment_w - 1);
+        p = malloc(n + alignment_w - 1);
         if (p == NULL) {
             return NULL;
         } else {
-            Bdescr(p)->flags |= BF_PINNED;
+            // MMTK-Question: what to do here?
+            if (!noGC) Bdescr(p)->flags |= BF_PINNED;
             W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
             MEMSET_SLOP_W(p, 0, off_w);
             p += off_w;

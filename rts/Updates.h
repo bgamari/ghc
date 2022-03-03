@@ -49,15 +49,18 @@
     W_ bd;                                                      \
                                                                 \
     prim_write_barrier;                                         \
+                                                                \
+    if(W_[noGC] != 1) {                                         \
     bd = Bdescr(p1);                                            \
-    if (bdescr_gen_no(bd) != 0 :: bits16) {                     \
-      IF_NONMOVING_WRITE_BARRIER_ENABLED {                      \
-        ccall updateRemembSetPushThunk_(BaseReg, p1 "ptr");     \
-      }                                                         \
-      recordMutableCap(p1, TO_W_(bdescr_gen_no(bd)));           \
-      TICK_UPD_OLD_IND();                                       \
-    } else {                                                    \
-      TICK_UPD_NEW_IND();                                       \
+        if (bdescr_gen_no(bd) != 0 :: bits16) {                 \
+        IF_NONMOVING_WRITE_BARRIER_ENABLED {                    \
+            ccall updateRemembSetPushThunk_(BaseReg, p1 "ptr"); \
+        }                                                       \
+        recordMutable(p1);                                      \
+        TICK_UPD_OLD_IND();                                     \
+        } else {                                                \
+        TICK_UPD_NEW_IND();                                     \
+        }                                                       \
     }                                                           \
     OVERWRITING_CLOSURE(p1);                                    \
     StgInd_indirectee(p1) = p2;                                 \
@@ -73,18 +76,21 @@ INLINE_HEADER void updateWithIndirection (Capability *cap,
                                           StgClosure *p2)
 {
     ASSERT( (P_)p1 != (P_)p2 );
-    /* not necessarily true: ASSERT( !closure_IND(p1) ); */
-    /* occurs in RaiseAsync.c:raiseAsync() */
-    /* See Note [Heap memory barriers] in SMP.h */
-    bdescr *bd = Bdescr((StgPtr)p1);
-    if (bd->gen_no != 0) {
-      IF_NONMOVING_WRITE_BARRIER_ENABLED {
-          updateRemembSetPushThunk(cap, (StgThunk*)p1);
-      }
-        recordMutableCap(p1, cap, bd->gen_no);
-        TICK_UPD_OLD_IND();
-    } else {
-        TICK_UPD_NEW_IND();
+    if (!noGC) {
+        printf("update with indirection \n");
+        /* not necessarily true: ASSERT( !closure_IND(p1) ); */
+        /* occurs in RaiseAsync.c:raiseAsync() */
+        /* See Note [Heap memory barriers] in SMP.h */
+        bdescr *bd = Bdescr((StgPtr)p1);
+        if (bd->gen_no != 0) {
+          IF_NONMOVING_WRITE_BARRIER_ENABLED {
+              updateRemembSetPushThunk(cap, (StgThunk*)p1);
+          }
+            recordClosureMutated(cap, p1);
+            TICK_UPD_OLD_IND();
+        } else {
+            TICK_UPD_NEW_IND();
+        }
     }
     OVERWRITING_CLOSURE(p1);
     RELEASE_STORE(&((StgInd *)p1)->indirectee, p2);

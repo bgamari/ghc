@@ -1569,6 +1569,7 @@ static void
 scheduleDoGC (Capability **pcap, Task *task USED_IF_THREADS,
               bool force_major, bool is_overflow_gc, bool deadlock_detect)
 {
+    if(noGC) barf("noGC exit scheduleDoGC");
     Capability *cap = *pcap;
     bool heap_census;
     uint32_t collect_gen;
@@ -2745,7 +2746,7 @@ exitScheduler (bool wait_foreign USED_IF_THREADS)
         nonmovingStop();
         Capability *cap = task->cap;
         waitForCapability(&cap,task);
-        scheduleDoGC(&cap,task,true,false,false);
+        if (!noGC) scheduleDoGC(&cap,task,true,false,false);
         ASSERT(task->incall->tso == NULL);
         releaseCapability(cap);
     }

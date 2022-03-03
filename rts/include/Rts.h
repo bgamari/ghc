@@ -332,6 +332,7 @@ extern StgInt TOTAL_CALLS;
 TICK_VAR(1)
 TICK_VAR(2)
 #endif
+StgWord noGC;
 
 /* -----------------------------------------------------------------------------
    Assertions and Debuggery

@@ -316,6 +316,9 @@ usage_text[] = {
 "  --copying-gc",
 "            Selects the copying garbage collector to manage all generations.",
 "",
+"  --no-gc",
+"            Performs no garbage collection.",
+"",
 "  -K<size>  Sets the maximum stack size (default: 80% of the heap)",
 "            e.g.: -K32k -K512k -K8M",
 "  -ki<size> Sets the initial thread stack size (default 1k)  e.g.: -ki4k -ki2m",
@@ -799,6 +802,13 @@ void setupRtsFlags (int *argc, char *argv[], RtsConfig rts_config)
         initStatsFile (RtsFlags.TickyFlags.tickyFile);
     }
 #endif
+
+    // setup noGC global variable (for cmm to see the flag)
+    noGC = RtsFlags.GcFlags.no_gc;
+    printf("nogc flag %d \n", RtsFlags.GcFlags.no_gc);
+    printf("nogc variable %d \n", noGC);
+    printf("nogc address %p \n", &noGC);
+    printf("nogc address %d \n", &noGC);
 }
 
 /* -----------------------------------------------------------------------------
@@ -1024,6 +1034,11 @@ error = true;
                                &rts_argv[arg][2])) {
                       OPTION_SAFE;
                       RtsFlags.GcFlags.useNonmoving = true;
+                  }
+                  else if (strequal("no-gc",
+                               &rts_argv[arg][2])) {
+                      OPTION_SAFE;
+                      RtsFlags.GcFlags.no_gc = true;
                   }
 #if defined(THREADED_RTS)
 #if defined(mingw32_HOST_OS)

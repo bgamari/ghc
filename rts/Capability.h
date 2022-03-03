@@ -89,6 +89,8 @@ struct Capability_ {
     // The update remembered set for the non-moving collector
     UpdRemSet upd_rem_set;
 
+
+    // MMTK-TODO: move pinned object blocks inside storage manager
     // block for allocating pinned objects into
     bdescr *pinned_object_block;
     // full pinned object blocks allocated since the last GC
@@ -438,6 +440,9 @@ recordMutableCap (const StgClosure *p, Capability *cap, uint32_t gen)
 EXTERN_INLINE void
 recordClosureMutated (Capability *cap, StgClosure *p)
 {
+    // MMTK-TODO: call MMTK write barrier
+    if (noGC) return;
+
     bdescr *bd;
     bd = Bdescr((StgPtr)p);
     if (bd->gen_no != 0) recordMutableCap(p,cap,bd->gen_no);
