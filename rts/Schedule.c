@@ -2210,6 +2210,8 @@ forkProcess(HsStablePtr *entry
 void
 setNumCapabilities (uint32_t new_n_capabilities USED_IF_THREADS)
 {
+    if (noGC) barf("noGC try to change number of capabilities; \
+                    Should change gen _mut_lists too.");
 #if !defined(THREADED_RTS)
     if (new_n_capabilities != 1) {
         errorBelch("setNumCapabilities: not supported in the non-threaded RTS");

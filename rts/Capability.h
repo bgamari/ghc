@@ -442,7 +442,6 @@ recordClosureMutated (Capability *cap, StgClosure *p)
 {
     // MMTK-TODO: call MMTK write barrier
     if (noGC) return;
-
     bdescr *bd;
     bd = Bdescr((StgPtr)p);
     if (bd->gen_no != 0) recordMutableCap(p,cap,bd->gen_no);

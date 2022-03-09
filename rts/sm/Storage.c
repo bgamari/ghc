@@ -1262,19 +1262,34 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
         // allocated for alignment reasons. Here we just allocate the maximum
         // number of extra words we could possibly need to satisfy the alignment
         // constraint.
-        // p = allocateMightFail(cap, n + alignment_w - 1);
-        p = malloc(n + alignment_w - 1);
+        p = allocateMightFail(cap, n + alignment_w - 1);
+
         if (p == NULL) {
             return NULL;
         } else {
-            // MMTK-Question: what to do here?
             if (!noGC) Bdescr(p)->flags |= BF_PINNED;
             W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
             MEMSET_SLOP_W(p, 0, off_w);
-            p += off_w;
+            p += off_w; // p += off_w * (sizeof(W_)) ?
             MEMSET_SLOP_W(p + n, 0, alignment_w - off_w - 1);
             return p;
         }
+    }
+
+    if (noGC) {
+        // step 1. allocate space + extra alignment
+        p = malloc(n*sizeof(W_) + alignment);
+
+        // step 2. calculate alignment
+        // when m = 2^i, n % m == n & (m - 1)
+        // (p+off)%align + off_ == align
+        W_ off_ = ((-((uintptr_t)p) - align_off) & (alignment-1));
+    
+        // step 3. zeroing
+        memset(p, 0, off_);
+        p += off_;
+        memset(p+n*sizeof(W_), 0, alignment-off_);
+        return p;
     }
 
     bd = cap->pinned_object_block;
@@ -1369,9 +1384,10 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
     MEMSET_SLOP_W(p, 0, off_w);
 
     n += off_w;
-    p += off_w;
+    p += off_w; // 
     bd->free += n;
 
+    // here we are not zeoring the slop after closure?
     accountAllocation(cap, n);
 
     return p;
