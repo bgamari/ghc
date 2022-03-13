@@ -15,6 +15,12 @@
 /* -----------------------------------------------------------------------------
    Initialisation / De-initialisation
    -------------------------------------------------------------------------- */
+typedef struct MmtkNursery {
+   bdescr *bd;
+   /* add some other fields if needed*/
+} MmtkNursery;
+
+MmtkNursery* mmtk_nurseries;
 
 void initStorage(void);
 void initGeneration(generation *gen, int g);
@@ -75,6 +81,7 @@ bool doYouWantToGC(Capability *cap)
     // This is necessarily approximate since otherwise we would need to take
     // SM_LOCK to safely look at n_new_large_words.
     TSAN_ANNOTATE_BENIGN_RACE(&g0->n_new_large_words, "doYouWantToGC(n_new_large_words)");
+    // if (noGC) return false;
     return ((cap->r.rCurrentNursery->link == NULL && !getNewNursery(cap)) ||
             RELAXED_LOAD(&g0->n_new_large_words) >= large_alloc_lim);
 }

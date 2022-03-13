@@ -287,6 +287,8 @@ void storageAddCapabilities (uint32_t from, uint32_t to)
     } else {
         nurseries = stgMallocBytes(new_n_nurseries * sizeof(struct nursery_),
                                    "storageAddCapabilities");
+        mmtk_nurseries = stgMallocBytes(new_n_nurseries * sizeof(struct MmtkNursery),
+                                    "storageAddMmtkNursery");
     }
 
     // we've moved the nurseries, so we have to update the rNursery
@@ -765,12 +767,25 @@ allocNursery (uint32_t node, bdescr *tail, W_ blocks)
 STATIC_INLINE void
 assignNurseryToCapability (Capability *cap, uint32_t n)
 {
-    ASSERT(n < n_nurseries);
-    cap->r.rNursery = &nurseries[n];
-    cap->r.rCurrentNursery = nurseries[n].blocks;
-    newNurseryBlock(nurseries[n].blocks);
-    cap->r.rCurrentAlloc   = NULL;
-    ASSERT(cap->r.rCurrentNursery->node == cap->node);
+    // when noGC, use external nursery
+    if (noGC) {
+        struct nursery_* nur = stgMallocBytes(sizeof(nursery), "fake nursery block for mmtk nursery");
+        nur->blocks = mmtk_nurseries[n].bd;
+        nur->n_blocks = BLOCKS_PER_MBLOCK;
+
+        cap->r.rNursery = nur;
+        cap->r.rCurrentNursery = mmtk_nurseries[n].bd;
+        cap->r.rCurrentAlloc   = mmtk_nurseries[n].bd;
+        cap->r.rCurrentAlloc   = NULL;
+    }
+    else {
+        ASSERT(n < n_nurseries);
+        cap->r.rNursery = &nurseries[n];
+        cap->r.rCurrentNursery = nurseries[n].blocks;
+        newNurseryBlock(nurseries[n].blocks);
+        cap->r.rCurrentAlloc   = NULL;
+        ASSERT(cap->r.rCurrentNursery->node == cap->node);
+    }
 }
 
 /*
@@ -802,8 +817,22 @@ allocNurseries (uint32_t from, uint32_t to)
     }
 
     for (i = from; i < to; i++) {
-        nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
-        nurseries[i].n_blocks = n_blocks;
+        // allocate extrenal nursery using malloc
+        // MMTK-TODO: change this to mmtk allocation
+        if (noGC){
+            StgPtr p = malloc(MBLOCK_SIZE);
+            struct bdescr_* bd = stgMallocBytes(sizeof(bdescr), "fake bd for mmtk nursery");
+            bd->start = p;
+            bd->free = bd->start;
+            bd->blocks = BLOCKS_PER_MBLOCK;
+            initBdescr(bd, g0, g0);
+            bd->link = bd;
+            mmtk_nurseries[i].bd = bd;
+        }
+        else {
+            nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
+            nurseries[i].n_blocks = n_blocks;
+        }
     }
 }
 
@@ -1270,7 +1299,7 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
             if (!noGC) Bdescr(p)->flags |= BF_PINNED;
             W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
             MEMSET_SLOP_W(p, 0, off_w);
-            p += off_w; // p += off_w * (sizeof(W_)) ?
+            p += off_w;
             MEMSET_SLOP_W(p + n, 0, alignment_w - off_w - 1);
             return p;
         }
@@ -1283,12 +1312,12 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
         // step 2. calculate alignment
         // when m = 2^i, n % m == n & (m - 1)
         // (p+off)%align + off_ == align
-        W_ off_ = ((-((uintptr_t)p) - align_off) & (alignment-1));
+        W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
     
         // step 3. zeroing
-        memset(p, 0, off_);
-        p += off_;
-        memset(p+n*sizeof(W_), 0, alignment-off_);
+        MEMSET_SLOP_W(p, 0, off_w);
+        p += off_w;
+        MEMSET_SLOP_W(p + n, 0, alignment_w - off_w);
         return p;
     }
 
@@ -1384,7 +1413,7 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
     MEMSET_SLOP_W(p, 0, off_w);
 
     n += off_w;
-    p += off_w; // 
+    p += off_w;
     bd->free += n;
 
     // here we are not zeoring the slop after closure?

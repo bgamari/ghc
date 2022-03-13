@@ -2209,14 +2209,6 @@ bool doIdleGCWork(Capability *cap STG_UNUSED, bool all)
     return runSomeFinalizers(all);
 }
 
-void hello_world(W_ bd);
-void hello_world(W_ bd) {
-    printf("calling hello world %d \n", bd);
-}
-
-void c_recordMutableCap(StgClosure *p, Capability *cap) {
-  recordClosureMutated(cap, p);
-} 
 
 /* Note [Synchronising work stealing]
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
