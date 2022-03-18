@@ -437,6 +437,8 @@ wanteds os = concat
 
           ,closureField  C    "StgTSO"      "_link"
           ,closureField  C    "StgTSO"      "global_link"
+          ,closureField  C    "StgTSO"      "tso_link_prev"
+          ,closureField  C    "StgTSO"      "tso_link_next"
           ,closureField  C    "StgTSO"      "what_next"
           ,closureField  C    "StgTSO"      "why_blocked"
           ,closureField  C    "StgTSO"      "block_info"

@@ -2005,7 +2005,6 @@ forkProcess(HsStablePtr *entry
 {
 #if defined(FORKPROCESS_PRIMOP_SUPPORTED)
     pid_t pid;
-    StgTSO* t,*next;
     Capability *cap;
     uint32_t g;
     Task *task = NULL;
@@ -2105,9 +2104,8 @@ forkProcess(HsStablePtr *entry
         // all Tasks, because they correspond to OS threads that are
         // now gone.
 
-        for (g = 0; g < RtsFlags.GcFlags.generations; g++) {
-          for (t = generations[g].threads; t != END_TSO_QUEUE; t = next) {
-                next = t->global_link;
+        StgTSO* t, *next;
+        for (t = global_TSOs; t->tso_link_next != END_TSO_QUEUE; t = next) {
                 // don't allow threads to catch the ThreadKilled
                 // exception, but we do want to raiseAsync() because these
                 // threads may be evaluating thunks that we need later.
@@ -2119,7 +2117,7 @@ forkProcess(HsStablePtr *entry
                 // won't get a chance to exit in the usual way (see
                 // also scheduleHandleThreadFinished).
                 t->bound = NULL;
-          }
+                next = t->tso_link_next;
         }
 
         discardTasksExcept(task);
@@ -2346,17 +2344,13 @@ setNumCapabilities (uint32_t new_n_capabilities USED_IF_THREADS)
 static void
 deleteAllThreads ()
 {
+    StgTSO* t, *next;
     // NOTE: only safe to call if we own all capabilities.
 
-    StgTSO* t, *next;
-    uint32_t g;
-
     debugTrace(DEBUG_sched,"deleting all threads");
-    for (g = 0; g < RtsFlags.GcFlags.generations; g++) {
-        for (t = generations[g].threads; t != END_TSO_QUEUE; t = next) {
-                next = t->global_link;
-                deleteThread(t);
-        }
+    for(t = global_TSOs; t->tso_link_next != END_TSO_QUEUE; t = next) {
+        next = t->tso_link_next;
+        deleteThread(t);
     }
 
     // The run queue now contains a bunch of ThreadKilled threads.  We

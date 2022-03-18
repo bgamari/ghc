@@ -26,6 +26,8 @@
 
 #include <string.h>
 
+StgTSO* global_TSOs = END_TSO_QUEUE;
+
 /* Next thread ID to allocate.
  * LOCK: sched_mutex
  */
@@ -130,6 +132,12 @@ createThread(Capability *cap, W_ size)
     /* Mutations above need no memory barrier since this lock will provide
      * a release barrier */
     g0->threads = tso;
+
+    // add the newly created tso to the global double linked list
+    tso->tso_link_prev = END_TSO_QUEUE;
+    tso->tso_link_next = global_TSOs;
+    global_TSOs = tso;
+
     RELEASE_LOCK(&sched_mutex);
 
     // ToDo: report the stack size in the event?
@@ -959,13 +967,11 @@ printAllThreads(void)
   }
 
   debugBelch("other threads:\n");
-  for (g = 0; g < RtsFlags.GcFlags.generations; g++) {
-    for (t = generations[g].threads; t != END_TSO_QUEUE; t = next) {
+  for (t = global_TSOs; t != END_TSO_QUEUE; t = next) {
       if (t->why_blocked != NotBlocked) {
           printThreadStatus(t);
       }
-      next = t->global_link;
-    }
+      next = t->tso_link_next;
   }
 }
 

@@ -54,6 +54,7 @@
 #include "RtsFlags.h"
 #include "NonMoving.h"
 #include "Ticky.h"
+#include "Threads.h"
 
 #include <string.h> // for memset()
 #include <unistd.h>
@@ -534,6 +535,8 @@ GarbageCollect (uint32_t collect_gen,
       markCapability(mark_root, gct, cap, true/*don't mark sparks*/);
   }
 
+  // add global TSO list as a GC root
+  evacuate((StgClosure **)&global_TSOs);
   markScheduler(mark_root, gct);
 
   // Mark the weak pointer list, and prepare to detect dead weak pointers.

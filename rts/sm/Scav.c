@@ -149,6 +149,12 @@ scavengeTSO (StgTSO *tso)
     }
 #endif
 
+    // evac in global_TSOs list too
+    // no evac for global_link
+    // should have handled in markweak - do not mark thread if thread is not reachable
+    evacuate((StgClosure **)&tso->tso_link_next);
+    evacuate((StgClosure **)&tso->tso_link_prev);
+
     tso->dirty = gct->failed_to_evac;
 
     gct->eager_promotion = saved_eager;
