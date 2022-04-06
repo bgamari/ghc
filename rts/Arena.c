@@ -50,7 +50,8 @@ newArena( void )
     // arena->current = allocBlock_lock();
     // MMTK: use malloc instead of block alloc
     arena->current = stgMallocBytes(sizeof(ArenaBlock), "newArena");
-    arena->current->start = malloc(BLOCK_SIZE);
+    // arena->current->start = malloc(BLOCK_SIZE);
+    // arena->current->start = mmtk_alloc(BLOCK_SIZE, )
     arena->current->link = NULL;
     arena->free = arena->current->start;
     arena->lim  = arena->current->start + BLOCK_SIZE_W;

@@ -383,6 +383,7 @@ wanteds os = concat
           ,structField C    "Capability" "total_allocated"
           ,structField C    "Capability" "weak_ptr_list_hd"
           ,structField C    "Capability" "weak_ptr_list_tl"
+          ,structField C    "Capability" "mmutator"
 
           ,structField Both "bdescr" "start"
           ,structField Both "bdescr" "free"

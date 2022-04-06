@@ -332,6 +332,8 @@ initCapability (Capability *cap, uint32_t i)
 #if defined(THREADED_RTS)
     traceSparkCounters(cap);
 #endif
+
+    cap->mmutator = mmtk_bind_mutator(cap);
 }
 
 /* ---------------------------------------------------------------------------

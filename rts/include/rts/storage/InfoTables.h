@@ -186,6 +186,8 @@ typedef StgHalfWord StgSRTField;
 /*
  * The "standard" part of an info table.  Every info table has this bit.
  */
+// we can assume the macro here is set (TABLES_NEXT_TO_CODE)
+// construct similar rust file (abi.rs)
 typedef struct StgInfoTable_ {
 
 #if !defined(TABLES_NEXT_TO_CODE)

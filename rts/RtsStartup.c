@@ -43,6 +43,10 @@
 #include "sm/CNF.h"
 #include "TopHandler.h"
 
+#if defined(MMTK_GHC)
+# include "mmtk.h"
+#endif
+
 #if defined(PROFILING)
 # include "ProfHeap.h"
 # include "RetainerProfile.h"
@@ -358,6 +362,9 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
     flushTrace();
 
     /* initialize the storage manager */
+    mmtk_gc_init(10*n_capabilities*MBLOCK_SIZE);
+    printf("inistialised mmtk, rebuild\n");
+    
     initStorage();
 
     /* initialise the stable pointer table */

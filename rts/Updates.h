@@ -77,7 +77,6 @@ INLINE_HEADER void updateWithIndirection (Capability *cap,
 {
     ASSERT( (P_)p1 != (P_)p2 );
     if (!noGC) {
-        printf("update with indirection \n");
         /* not necessarily true: ASSERT( !closure_IND(p1) ); */
         /* occurs in RaiseAsync.c:raiseAsync() */
         /* See Note [Heap memory barriers] in SMP.h */

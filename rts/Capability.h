@@ -26,6 +26,7 @@
 #include "sm/NonMovingMark.h" // for MarkQueue
 
 #include "BeginPrivate.h"
+#include "mmtk.h"
 
 /* N.B. This must be consistent with CapabilityPublic in RtsAPI.h */
 struct Capability_ {
@@ -77,6 +78,9 @@ struct Capability_ {
     // this list.
     InCall *suspended_ccalls;
     uint32_t n_suspended_ccalls;
+
+    // MMTk mutator (per OS thread)
+    MMTk_Mutator mmutator;
 
     // One mutable list per generation, so we don't need to take any
     // locks when updating an old-generation thunk.  This also lets us

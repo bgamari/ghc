@@ -54,6 +54,8 @@
 
 #include "ffi.h"
 
+#include "mmtk.h"
+
 /*
  * All these globals require sm_mutex to access in THREADED_RTS mode.
  */
@@ -820,7 +822,7 @@ allocNurseries (uint32_t from, uint32_t to)
         // allocate extrenal nursery using malloc
         // MMTK-TODO: change this to mmtk allocation
         if (noGC){
-            StgPtr p = malloc(MBLOCK_SIZE);
+            StgPtr p = mmtk_alloc(capabilities[i]->mmutator, 10*MBLOCK_SIZE, sizeof(W_), 0, 0);
             struct bdescr_* bd = stgMallocBytes(sizeof(bdescr), "fake bd for mmtk nursery");
             bd->start = p;
             bd->free = bd->start;
@@ -1118,7 +1120,7 @@ allocateMightFail (Capability *cap, W_ n)
     StgPtr p;
     
     if (noGC) {
-        p = malloc(n*sizeof(W_));
+        p = mmtk_alloc(cap->mmutator, n*sizeof(W_), sizeof(W_), 0, 0);
         return p;
     }
 
@@ -1307,17 +1309,17 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
 
     if (noGC) {
         // step 1. allocate space + extra alignment
-        p = malloc(n*sizeof(W_) + alignment);
+        p = mmtk_alloc(cap->mmutator, n*sizeof(W_), alignment, align_off, 0);
 
-        // step 2. calculate alignment
-        // when m = 2^i, n % m == n & (m - 1)
-        // (p+off)%align + off_ == align
-        W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
+        // // step 2. calculate alignment
+        // // when m = 2^i, n % m == n & (m - 1)
+        // // (p+off)%align + off_ == align
+        // W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
     
-        // step 3. zeroing
-        MEMSET_SLOP_W(p, 0, off_w);
-        p += off_w;
-        MEMSET_SLOP_W(p + n, 0, alignment_w - off_w);
+        // // step 3. zeroing
+        // MEMSET_SLOP_W(p, 0, off_w);
+        // p += off_w;
+        // MEMSET_SLOP_W(p + n, 0, alignment_w - off_w);
         return p;
     }
 
@@ -1547,6 +1549,9 @@ dirty_STACK (Capability *cap, StgStack *stack)
         updateRemembSetPushStack(cap, stack);
     }
 
+    // if stack is not dirty, set the flag, put to mut set
+    // any heap obj has been mutated since last GC, that lives in an older gen of the nursery
+    // 
     if (RELAXED_LOAD(&stack->dirty) == 0) {
         RELAXED_STORE(&stack->dirty, 1);
         recordClosureMutated(cap,(StgClosure*)stack);

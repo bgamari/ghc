@@ -86,6 +86,8 @@ typedef struct {
 
 // Generic closure layout, all closures follow this format consisting of a
 // header field and some payload
+// also construct similar rs structure
+// stgclosure -> selector , ..., (subtype)
 typedef struct StgClosure_ {
     StgHeader   header;
     struct StgClosure_ *payload[];
