@@ -85,6 +85,7 @@ library
     -- flavours to be available when passing the suitable (combination of)
     -- flag(s) when configuring the RTS from hadrian, using Cabal.
     extra-library-flavours: _thr
+    extra-library-flavours: _mmtk, _thr_mmtk, _debug_mmtk
 
     if flag(profiling)
       extra-library-flavours: _p _thr_p
@@ -96,6 +97,7 @@ library
         extra-dynamic-library-flavours: _debug _thr_debug
     if flag(dynamic)
       extra-dynamic-library-flavours: _thr
+      extra-dynamic-library-flavours: _mmtk, _thr_mmtk, _debug_mmtk
 
     if flag(thread-sanitizer)
       cc-options: -fsanitize=thread
@@ -469,6 +471,7 @@ library
     -- Use assembler STG entrypoint on architectures where it is used
     if arch(ppc) || arch(ppc64) || arch(s390x) || arch(riscv64)
       asm-sources: StgCRunAsm.S
+
 
     c-sources: Adjustor.c
                adjustor/AdjustorPool.c

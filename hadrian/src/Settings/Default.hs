@@ -178,10 +178,11 @@ defaultRtsWays = Set.fromList <$>
   [ pure [vanilla, threaded]
   , notStage0 ? pure
       [ profiling, threadedProfiling, debugProfiling, threadedDebugProfiling
-      , debug, threadedDebug
+      , debug, threadedDebug, mmtk, threadedMmtk, debugMmtk
       ]
   , notStage0 ? platformSupportsSharedLibs ? pure
       [ dynamic, threadedDynamic, debugDynamic, threadedDebugDynamic
+      , threadedMmtkDynamic, debugMmtkDynamic
       ]
   ]
 

@@ -239,6 +239,7 @@ wayGhcArgs = do
             , (Threaded  `wayUnit` way) ? arg "-optc-DTHREADED_RTS"
             , (Debug     `wayUnit` way) ? arg "-optc-DDEBUG"
             , (Profiling `wayUnit` way) ? arg "-prof"
+            , (MMTK      `wayUnit` way) ? arg "-DMMTK_GHC"
             , (way == debug || way == debugDynamic) ?
               pure ["-ticky", "-DTICKY_TICKY"] ]
 
