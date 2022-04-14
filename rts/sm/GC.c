@@ -1149,15 +1149,15 @@ new_gc_thread (uint32_t n, gc_thread *t)
             bdescr *bd = NULL;
 #else
             bdescr *bd = allocBlockOnNode(capNoToNumaNode(n));
-#endif;
                 // no lock, locks aren't initialised yet
             initBdescr(bd, ws->gen, ws->gen->to);
             bd->flags = BF_EVACUATED;
             bd->u.scan = bd->free = bd->start;
 
-            ws->todo_bd = bd;
             ws->todo_free = bd->free;
             ws->todo_lim = bd->start + BLOCK_SIZE_W;
+#endif;
+            ws->todo_bd = bd;
         }
 
         ws->todo_q = newWSDeque(128);

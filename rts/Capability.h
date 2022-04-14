@@ -423,6 +423,11 @@ INLINE_HEADER bool emptyInbox(Capability *cap);
 EXTERN_INLINE void
 recordMutableCap (const StgClosure *p, Capability *cap, uint32_t gen)
 {
+#if defined(MMTK_GHC)
+    // TODO: call MMTK write barrier
+    return;
+#endif
+
     bdescr *bd;
 
     // We must own this Capability in order to modify its mutable list.
