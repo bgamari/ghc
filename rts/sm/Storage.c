@@ -319,8 +319,12 @@ void storageAddCapabilities (uint32_t from, uint32_t to)
     // allocate a block for each mut list
     for (n = from; n < to; n++) {
         for (g = 1; g < RtsFlags.GcFlags.generations; g++) {
+#if defined(MMTK_GHC)
+            capabilities[n]->mut_lists[g] = NULL;
+#else
             capabilities[n]->mut_lists[g] =
                 allocBlockOnNode(capNoToNumaNode(n));
+#endif
         }
     }
 
@@ -769,25 +773,25 @@ allocNursery (uint32_t node, bdescr *tail, W_ blocks)
 STATIC_INLINE void
 assignNurseryToCapability (Capability *cap, uint32_t n)
 {
-    // when noGC, use external nursery
-    if (noGC) {
-        struct nursery_* nur = stgMallocBytes(sizeof(nursery), "fake nursery block for mmtk nursery");
-        nur->blocks = mmtk_nurseries[n].bd;
-        nur->n_blocks = BLOCKS_PER_MBLOCK;
+#if defined(MMTK_GHC)
+    // temperarily use a fake bdescr to wire with mmtk allocation
+    // TODO: change stg nursry to not use bdescr    
+    struct nursery_* nur = stgMallocBytes(sizeof(nursery), "fake nursery block for mmtk nursery");
+    nur->blocks = mmtk_nurseries[n].bd;
+    nur->n_blocks = BLOCKS_PER_MBLOCK;
 
-        cap->r.rNursery = nur;
-        cap->r.rCurrentNursery = mmtk_nurseries[n].bd;
-        cap->r.rCurrentAlloc   = mmtk_nurseries[n].bd;
-        cap->r.rCurrentAlloc   = NULL;
-    }
-    else {
-        ASSERT(n < n_nurseries);
-        cap->r.rNursery = &nurseries[n];
-        cap->r.rCurrentNursery = nurseries[n].blocks;
-        newNurseryBlock(nurseries[n].blocks);
-        cap->r.rCurrentAlloc   = NULL;
-        ASSERT(cap->r.rCurrentNursery->node == cap->node);
-    }
+    cap->r.rNursery = nur;
+    cap->r.rCurrentNursery = mmtk_nurseries[n].bd;
+    cap->r.rCurrentAlloc   = mmtk_nurseries[n].bd;
+    cap->r.rCurrentAlloc   = NULL;
+#else
+    ASSERT(n < n_nurseries);
+    cap->r.rNursery = &nurseries[n];
+    cap->r.rCurrentNursery = nurseries[n].blocks;
+    newNurseryBlock(nurseries[n].blocks);
+    cap->r.rCurrentAlloc   = NULL;
+    ASSERT(cap->r.rCurrentNursery->node == cap->node);
+#endif
 }
 
 /*
@@ -819,22 +823,19 @@ allocNurseries (uint32_t from, uint32_t to)
     }
 
     for (i = from; i < to; i++) {
-        // allocate extrenal nursery using malloc
-        // MMTK-TODO: change this to mmtk allocation
-        if (noGC){
-            StgPtr p = mmtk_alloc(capabilities[i]->mmutator, 10*MBLOCK_SIZE, sizeof(W_), 0, 0);
-            struct bdescr_* bd = stgMallocBytes(sizeof(bdescr), "fake bd for mmtk nursery");
-            bd->start = p;
-            bd->free = bd->start;
-            bd->blocks = BLOCKS_PER_MBLOCK;
-            initBdescr(bd, g0, g0);
-            bd->link = bd;
-            mmtk_nurseries[i].bd = bd;
-        }
-        else {
-            nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
-            nurseries[i].n_blocks = n_blocks;
-        }
+#if defined(MMTK_GHC)
+        StgPtr p = mmtk_alloc(capabilities[i]->mmutator, 10*MBLOCK_SIZE, sizeof(W_), 0, 0);
+        struct bdescr_* bd = stgMallocBytes(sizeof(bdescr), "fake bd for mmtk nursery");
+        bd->start = p;
+        bd->free = bd->start;
+        bd->blocks = BLOCKS_PER_MBLOCK;
+        initBdescr(bd, g0, g0);
+        bd->link = bd;
+        mmtk_nurseries[i].bd = bd;
+#else
+        nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
+        nurseries[i].n_blocks = n_blocks;
+#endif
     }
 }
 
@@ -1119,10 +1120,10 @@ allocateMightFail (Capability *cap, W_ n)
 {
     StgPtr p;
     
-    if (noGC) {
-        p = mmtk_alloc(cap->mmutator, n*sizeof(W_), sizeof(W_), 0, 0);
-        return p;
-    }
+#if defined(MMTK_GHC)
+    p = mmtk_alloc(cap->mmutator, n*sizeof(W_), sizeof(W_), 0, 0);
+    return p;
+#endif
 
     bdescr *bd;
 
@@ -1298,7 +1299,10 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
         if (p == NULL) {
             return NULL;
         } else {
-            if (!noGC) Bdescr(p)->flags |= BF_PINNED;
+
+#if !defined(MMTK_GHC)
+            Bdescr(p)->flags |= BF_PINNED;
+#endif
             W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
             MEMSET_SLOP_W(p, 0, off_w);
             p += off_w;
@@ -1307,21 +1311,10 @@ allocatePinned (Capability *cap, W_ n /*words*/, W_ alignment /*bytes*/, W_ alig
         }
     }
 
-    if (noGC) {
-        // step 1. allocate space + extra alignment
-        p = mmtk_alloc(cap->mmutator, n*sizeof(W_), alignment, align_off, 0);
-
-        // // step 2. calculate alignment
-        // // when m = 2^i, n % m == n & (m - 1)
-        // // (p+off)%align + off_ == align
-        // W_ off_w = ALIGN_WITH_OFF_W(p, alignment, align_off);
-    
-        // // step 3. zeroing
-        // MEMSET_SLOP_W(p, 0, off_w);
-        // p += off_w;
-        // MEMSET_SLOP_W(p + n, 0, alignment_w - off_w);
-        return p;
-    }
+#if defined(MMTK_GHC)
+    p = mmtk_alloc(cap->mmutator, n*sizeof(W_), alignment, align_off, 0);
+    return p;
+#endif
 
     bd = cap->pinned_object_block;
 

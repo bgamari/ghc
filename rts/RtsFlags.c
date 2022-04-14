@@ -802,13 +802,6 @@ void setupRtsFlags (int *argc, char *argv[], RtsConfig rts_config)
         initStatsFile (RtsFlags.TickyFlags.tickyFile);
     }
 #endif
-
-    // setup noGC global variable (for cmm to see the flag)
-    noGC = RtsFlags.GcFlags.no_gc;
-    // printf("nogc flag %d \n", RtsFlags.GcFlags.no_gc);
-    // printf("nogc variable %d \n", noGC);
-    // printf("nogc address %p \n", &noGC);
-    // printf("nogc address %d \n", &noGC);
 }
 
 /* -----------------------------------------------------------------------------

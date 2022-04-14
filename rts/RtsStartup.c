@@ -362,8 +362,10 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
     flushTrace();
 
     /* initialize the storage manager */
+#if defined(MMTK_GHC)
     mmtk_gc_init(10*n_capabilities*MBLOCK_SIZE);
     printf("inistialised mmtk, rebuild\n");
+#endif
     
     initStorage();
 

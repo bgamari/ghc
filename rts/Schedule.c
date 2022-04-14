@@ -1569,7 +1569,16 @@ static void
 scheduleDoGC (Capability **pcap, Task *task USED_IF_THREADS,
               bool force_major, bool is_overflow_gc, bool deadlock_detect)
 {
-    if(noGC) barf("noGC exit scheduleDoGC");
+#if defined(MMTK_GHC)
+    // exit GC if in MMTK Mode
+    // TODO: distinguish scheduling and GC after delete_threads_and_gc
+    if (RELAXED_LOAD(&sched_state) == SCHED_INTERRUPTING) {
+        sched_state = SCHED_SHUTTING_DOWN;
+        deleteAllThreads();
+    } else {
+        barf("MMTK_GHC exit scheduleDoGC");
+    }
+#endif
     Capability *cap = *pcap;
     bool heap_census;
     uint32_t collect_gen;
@@ -2210,10 +2219,12 @@ forkProcess(HsStablePtr *entry
 void
 setNumCapabilities (uint32_t new_n_capabilities USED_IF_THREADS)
 {
-    if (noGC && new_n_capabilities != 1) {
+#if defined(MMTK_GHC)
+    if (new_n_capabilities != 1) {
         barf("noGC try to change number of capabilities; \
                     Should change gen _mut_lists too.");
     }
+#endif
 #if !defined(THREADED_RTS)
     if (new_n_capabilities != 1) {
         errorBelch("setNumCapabilities: not supported in the non-threaded RTS");
@@ -2750,7 +2761,7 @@ exitScheduler (bool wait_foreign USED_IF_THREADS)
         nonmovingStop();
         Capability *cap = task->cap;
         waitForCapability(&cap,task);
-        if (!noGC) scheduleDoGC(&cap,task,true,false,false);
+        scheduleDoGC(&cap,task,true,false,false);
         ASSERT(task->incall->tso == NULL);
         releaseCapability(cap);
     }

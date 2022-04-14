@@ -1145,7 +1145,11 @@ new_gc_thread (uint32_t n, gc_thread *t)
         // but can't, because it uses gct which isn't set up at this point.
         // Hence, allocate a block for todo_bd manually:
         {
+#if defined(MMTK_GHC)
+            bdescr *bd = NULL;
+#else
             bdescr *bd = allocBlockOnNode(capNoToNumaNode(n));
+#endif;
                 // no lock, locks aren't initialised yet
             initBdescr(bd, ws->gen, ws->gen->to);
             bd->flags = BF_EVACUATED;

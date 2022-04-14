@@ -86,12 +86,13 @@ import ReleaseSRWLockExclusives;
 stg_gc_noregs
 {
     W_ ret;
-
-    if (W_[noGC] == 1 && Hp > HpLim){
+#if defined(MMTK_GHC)
+    if (Hp > HpLim){
         ccall printf("hp %p \n", Hp);
         ccall printf("hpLim %p \n", HpLim);
         foreign "C" barf("noGC hits nurserylimit");
     }
+#endif
     DEBUG_ONLY(foreign "C" heapCheckFail());
     if (Hp > HpLim) {
         Hp = Hp - HpAlloc/*in bytes*/;

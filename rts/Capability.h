@@ -444,8 +444,10 @@ recordMutableCap (const StgClosure *p, Capability *cap, uint32_t gen)
 EXTERN_INLINE void
 recordClosureMutated (Capability *cap, StgClosure *p)
 {
-    // MMTK-TODO: call MMTK write barrier
-    if (noGC) return;
+#if defined(MMTK_GHC)
+    // TODO: call MMTK write barrier
+    return;
+#endif
     bdescr *bd;
     bd = Bdescr((StgPtr)p);
     if (bd->gen_no != 0) recordMutableCap(p,cap,bd->gen_no);

@@ -39,10 +39,10 @@ extern void mmtk_flush_mutator(MMTk_Mutator mutator);
 extern void mmtk_initialize_collection(void* tls);
 
 // Allow MMTk to perform a GC when the heap is full
-extern void mmtk_enable_collection();
+extern void mmtk_enable_collection(void);
 
 // Disallow MMTk to perform a GC when the heap is full
-extern void mmtk_disable_collection();
+extern void mmtk_disable_collection(void);
 
 // Allocate memory for an object
 extern void* mmtk_alloc(MMTk_Mutator mutator,
@@ -51,12 +51,6 @@ extern void* mmtk_alloc(MMTk_Mutator mutator,
                         ssize_t offset,
                         int allocator);
 
-// Slowpath allocation for an object
-extern void* mmtk_alloc_slow(MMTk_Mutator mutator,
-                             size_t size,
-                             size_t align,
-                             ssize_t offset,
-                             int allocator);
 
 // Perform post-allocation hooks or actions such as initializing object metadata
 extern void mmtk_post_alloc(MMTk_Mutator mutator,
@@ -86,7 +80,7 @@ extern bool mmtk_process(char* name, char* value);
 extern bool mmtk_process_bulk(char* options);
 
 // Sanity only. Scan heap for discrepancies and errors
-extern void mmtk_scan_region();
+extern void mmtk_scan_region(void);
 
 // Request MMTk to trigger a GC. Note that this may not actually trigger a GC
 extern void mmtk_handle_user_collection_request(void* tls);
@@ -98,19 +92,19 @@ extern void mmtk_start_control_collector(void* tls, void* worker);
 extern void mmtk_start_worker(void* tls, void* worker);
 
 // Return the current amount of free memory in bytes
-extern size_t mmtk_free_bytes();
+extern size_t mmtk_free_bytes(void);
 
 // Return the current amount of used memory in bytes
-extern size_t mmtk_used_bytes();
+extern size_t mmtk_used_bytes(void);
 
 // Return the current amount of total memory in bytes
-extern size_t mmtk_total_bytes();
+extern size_t mmtk_total_bytes(void);
 
 // Return the starting address of MMTk's heap
-extern void* mmtk_starting_heap_address();
+extern void* mmtk_starting_heap_address(void);
 
 // Return the ending address of MMTk's heap
-extern void* mmtk_last_heap_address();
+extern void* mmtk_last_heap_address(void);
 
 // Add a reference to the list of weak references
 extern void mmtk_add_weak_candidate(void* ref, void* referent);
@@ -125,7 +119,7 @@ extern void mmtk_add_phantom_candidate(void* ref, void* referent);
 extern void mmtk_harness_begin(void* tls);
 
 // Generic hook to allow benchmarks to be harnessed
-extern void mmtk_harness_end();
+extern void mmtk_harness_end(void);
 
 #ifdef __cplusplus
 }
