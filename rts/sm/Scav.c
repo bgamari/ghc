@@ -232,6 +232,7 @@ StgPtr scavenge_mut_arr_ptrs (StgMutArrPtrs *a)
     p = (StgPtr)&a->payload[0];
     for (m = 0; (int)m < (int)mutArrPtrsCards(a->ptrs) - 1; m++)
     {
+        // MUT_ARR_PTRS_CARD_BITS = size of the card, each card has 2^7 elements
         q = p + (1 << MUT_ARR_PTRS_CARD_BITS);
         for (; p < q; p++) {
             evacuate((StgClosure**)p);
@@ -1956,6 +1957,7 @@ scavenge_stack(StgPtr p, StgPtr stack_end)
         p = scavenge_small_bitmap(p, size, bitmap);
 
     follow_srt:
+    // srt is generated (e.g. thunks)
         if (major_gc && info->i.srt) {
             StgClosure *srt = (StgClosure*)GET_SRT(info);
             evacuate(&srt);

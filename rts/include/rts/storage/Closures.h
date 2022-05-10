@@ -86,8 +86,6 @@ typedef struct {
 
 // Generic closure layout, all closures follow this format consisting of a
 // header field and some payload
-// also construct similar rs structure
-// stgclosure -> selector , ..., (subtype)
 typedef struct StgClosure_ {
     StgHeader   header;
     struct StgClosure_ *payload[];
@@ -206,8 +204,7 @@ typedef struct {
 // An array of heap objects, ie Array# v and MutableArray# v
 //
 // Closure types: MUT_ARR_PTRS_CLEAN, MUT_ARR_PTRS_DIRTY,
-// MUT_ARR_PTRS_FROZEN_DIRTY, MUT_ARR_PTRS_FROZEN_CLEAN, MUT_VAR_CLEAN,
-// MUT_VAR_DIRTY
+// MUT_ARR_PTRS_FROZEN_DIRTY, MUT_ARR_PTRS_FROZEN_CLEAN, 
 typedef struct {
     StgHeader   header;
     StgWord     ptrs;
