@@ -256,6 +256,7 @@ StgMutArrPtrs *heap_view_closurePtrs(Capability *cap, StgClosure *closure) {
     // the closure and then we can allocate space on the heap and copy them
     // there. Note that we cannot allocate this on the C stack as the closure
     // may be, e.g., a large array.
+    // upper bound: sizeof(StgClosure *) * size
     StgClosure **ptrs = (StgClosure **) stgMallocBytes(sizeof(StgClosure *) * size, "heap_view_closurePtrs");
     StgWord nptrs = collect_pointers(closure, ptrs);
 

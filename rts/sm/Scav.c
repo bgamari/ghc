@@ -246,7 +246,8 @@ StgPtr scavenge_mut_arr_ptrs (StgMutArrPtrs *a)
         }
     }
 
-    q = (StgPtr)&a->payload[a->ptrs];
+    // looking at the last card, since it might not be full
+    q = (StgPtr)&a->payload[a->ptrs]; // piont to (n+1)th element in the array
     if (p < q) {
         for (; p < q; p++) {
             evacuate((StgClosure**)p);
