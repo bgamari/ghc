@@ -205,25 +205,48 @@ StgWord collect_pointers(StgClosure *closure, StgClosure *ptrs[]) {
             ptrs[nptrs++] = ((StgMVar *)closure)->value;
             break;
         case TSO:
-            ASSERT((StgClosure *)((StgTSO *)closure)->_link != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->_link;
+        {
+            StgTSO* tso = ((StgTSO *)closure);
 
-            ASSERT((StgClosure *)((StgTSO *)closure)->global_link != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->global_link;
+            if (tso->bound != NULL) {
+                ptrs[nptrs++] = (StgClosure *)tso->bound->tso;
+            }
 
-            ASSERT((StgClosure *)((StgTSO *)closure)->stackobj != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->stackobj;
+            ASSERT((StgClosure *)tso->_link != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->_link;
 
-            ASSERT((StgClosure *)((StgTSO *)closure)->trec != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->trec;
+            ASSERT((StgClosure *)tso->global_link != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->global_link;
 
-            ASSERT((StgClosure *)((StgTSO *)closure)->blocked_exceptions != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->blocked_exceptions;
+            ASSERT((StgClosure *)tso->stackobj != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->stackobj;
 
-            ASSERT((StgClosure *)((StgTSO *)closure)->bq != NULL);
-            ptrs[nptrs++] = (StgClosure *)((StgTSO *)closure)->bq;
+            ASSERT((StgClosure *)tso->trec != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->trec;
 
+            ASSERT((StgClosure *)tso->blocked_exceptions != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->blocked_exceptions;
+
+            ASSERT((StgClosure *)tso->bq != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->bq;
+
+            ASSERT((StgClosure *)tso->tso_link_prev != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->tso_link_prev;
+
+            ASSERT((StgClosure *)tso->tso_link_next != NULL);
+            ptrs[nptrs++] = (StgClosure *)tso->tso_link_next;
+
+            if (   tso->why_blocked == BlockedOnMVar
+                || tso->why_blocked == BlockedOnMVarRead
+                || tso->why_blocked == BlockedOnBlackHole
+                || tso->why_blocked == BlockedOnMsgThrowTo
+                || tso->why_blocked == NotBlocked
+                ) {
+                ASSERT((StgClosure *)tso->block_info.closure != NULL);
+                ptrs[nptrs++] = (StgClosure *)tso->block_info.closure;
+            }
             break;
+        }
         case WEAK: {
             StgWeak *w = (StgWeak *)closure;
             ptrs[nptrs++] = (StgClosure *) w->cfinalizers;

@@ -112,6 +112,12 @@ static void allocNurseries (uint32_t from, uint32_t to);
 static void assignNurseriesToCapabilities (uint32_t from, uint32_t to);
 static StgInd * lockCAF (StgRegTable *reg, StgIndStatic *caf);
 
+StgPtr rtsHeapAlloc(StgRegTable *reg, StgWord size_w) {
+    Capability *cap = regTableToCapability(reg);
+    printf("calling mmtk heap alloc from code gen \n");
+    return mmtk_alloc(cap, size_w*sizeof(W_), sizeof(W_), 0, 0);
+}
+
 void
 initGeneration (generation *gen, int g)
 {

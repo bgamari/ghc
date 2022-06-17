@@ -22,6 +22,8 @@ typedef struct MmtkNursery {
 
 MmtkNursery* mmtk_nurseries;
 
+StgPtr rtsHeapAlloc(StgRegTable *reg, StgWord size_w);
+
 void initStorage(void);
 void initGeneration(generation *gen, int g);
 void exitStorage(void);

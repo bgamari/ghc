@@ -194,9 +194,9 @@ continuation, resulting in just one proc point instead of two. Yay!
 -}
 
 
-emitCCall :: [(CmmFormal,ForeignHint)]
-          -> CmmExpr
-          -> [(CmmActual,ForeignHint)]
+emitCCall :: [(CmmFormal,ForeignHint)] -- result: pointer to the object CmmFormal-result
+          -> CmmExpr -- actual funtion
+          -> [(CmmActual,ForeignHint)] -- cmmActual: expression
           -> FCode ()
 emitCCall hinted_results fn hinted_args
   = void $ emitForeignCall PlayRisky results target args

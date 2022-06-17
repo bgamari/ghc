@@ -374,6 +374,8 @@
 #include "rts/storage/Block.h"  /* For Bdescr() */
 
 
+// BaseReg is pointing to a StgRegTable inside my capability
+// OFFSET_Capability_r is the auto-generated offset
 #define MyCapability()  (BaseReg - OFFSET_Capability_r)
 
 /* -------------------------------------------------------------------------

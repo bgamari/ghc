@@ -51,6 +51,9 @@ import GHC.Utils.Panic( sorry )
 
 import Control.Monad (when)
 import Data.Maybe (isJust)
+import GHC.Platform.Ways (hasWay, Way (WayMMTK))
+import GHC.StgToCmm.Foreign (emitCCall)
+import GHC.Types.Basic (FunctionOrData(IsFunction))
 
 -----------------------------------------------------------
 --              Initialise dynamic heap objects
@@ -108,6 +111,7 @@ allocDynClosureCmm mb_id info_tbl lf_info use_cc _blame_cc amodes_w_offsets = do
 
 
 -- | Low-level heap object allocation.
+-- Combine GHCSM heap allocation; and a call to MMTk allocation
 allocHeapClosure
   :: SMRep                            -- ^ representation of the object
   -> CmmExpr                          -- ^ info pointer
@@ -115,6 +119,18 @@ allocHeapClosure
   -> [(CmmExpr,ByteOff)]              -- ^ payload
   -> FCode CmmExpr                    -- ^ returns the address of the object
 allocHeapClosure rep info_ptr use_cc payload = do
+  profile <- getProfile
+  if profileWays profile `hasWay` WayMMTK
+    then allocHeapClosureMmtk rep info_ptr use_cc payload
+    else allocHeapClosureGhcsm rep info_ptr use_cc payload
+
+allocHeapClosureGhcsm
+  :: SMRep                            -- ^ representation of the object
+  -> CmmExpr                          -- ^ info pointer
+  -> CmmExpr                          -- ^ cost centre
+  -> [(CmmExpr,ByteOff)]              -- ^ payload
+  -> FCode CmmExpr                    -- ^ returns the address of the object
+allocHeapClosureGhcsm rep info_ptr use_cc payload = do
   profDynAlloc rep use_cc
 
   virt_hp <- getVirtHp
@@ -126,9 +142,9 @@ allocHeapClosure rep info_ptr use_cc payload = do
             -- Remember, virtHp points to last allocated word,
             -- ie 1 *before* the info-ptr word of new object.
 
-  base <- getHpRelOffset info_offset
+  base <- getHpRelOffset info_offset -- actual allocation
   emitComment $ mkFastString "allocHeapClosure"
-  emitSetDynHdr base info_ptr use_cc
+  emitSetDynHdr base info_ptr use_cc -- info pointer header and profiling header
 
   -- Fill in the fields
   hpStore base payload
@@ -138,6 +154,34 @@ allocHeapClosure rep info_ptr use_cc payload = do
   setVirtHp (virt_hp + heapClosureSizeW profile rep)
 
   return base
+
+allocHeapClosureMmtk
+  :: SMRep                            -- ^ representation of the object
+  -> CmmExpr                          -- ^ info pointer
+  -> CmmExpr                          -- ^ cost centre (affects profiling only, which we currently don't support)
+  -> [(CmmExpr,ByteOff)]              -- ^ payload
+  -> FCode CmmExpr                    -- ^ returns the address of the object
+allocHeapClosureMmtk rep info_ptr use_cc payload = do
+   platform <- getPlatform
+   profile <- getProfile
+   let sz = heapClosureSizeW profile rep
+       sz_expr = CmmLit $ CmmInt (toInteger sz) (wordWidth platform)
+   res <- (GHC.StgToCmm.Monad.newTemp (GHC.Cmm.gcWord platform) :: FCode LocalReg)
+   emitCCall
+        [(res, NoHint)]
+        (CmmLit (CmmLabel (mkForeignLabel (fsLit "rtsHeapAlloc") Nothing ForeignLabelInExternalPackage IsFunction)))
+        [(GHC.Cmm.Utils.baseExpr, AddrHint), (sz_expr, NoHint)]
+
+   let res_expr :: CmmExpr
+       res_expr = CmmReg (CmmLocal res)
+       
+   -- Fill in the closure's StgHeader (info table pointer and profiling closure)
+   emitSetDynHdr res_expr info_ptr use_cc
+
+   -- Fill in the closure's fields
+   hpStore res_expr payload
+
+   return res_expr
 
 
 emitSetDynHdr :: CmmExpr -> CmmExpr -> CmmExpr -> FCode ()
