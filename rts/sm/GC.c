@@ -1156,7 +1156,7 @@ new_gc_thread (uint32_t n, gc_thread *t)
 
             ws->todo_free = bd->free;
             ws->todo_lim = bd->start + BLOCK_SIZE_W;
-#endif;
+#endif
             ws->todo_bd = bd;
         }
 

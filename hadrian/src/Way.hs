@@ -5,7 +5,7 @@ module Way (
     threadedDebug, threadedProfiling, threadedDynamic, threadedMmtk, 
     threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic,
     debugProfiling, debugDynamic, debugMmtk,
-    threadedMmtkDynamic, debugMmtkDynamic,
+    threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk,
     wayPrefix, waySuffix, hisuf, osuf, hcsuf, obootsuf, hibootsuf, ssuf
     ) where
 
@@ -43,7 +43,7 @@ mmtk = wayFromUnits [MMTK]
 threadedDebug, threadedProfiling, threadedDynamic,
     threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic,
     debugProfiling, debugDynamic, 
-    threadedMmtk, debugMmtk,threadedMmtkDynamic, debugMmtkDynamic :: Way
+    threadedMmtk, debugMmtk,threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk :: Way
 threadedDebug            = wayFromUnits [Threaded, Debug]
 threadedProfiling        = wayFromUnits [Threaded, Profiling]
 threadedDynamic          = wayFromUnits [Threaded, Dynamic]
@@ -54,14 +54,16 @@ debugProfiling           = wayFromUnits [Debug, Profiling]
 debugDynamic             = wayFromUnits [Debug, Dynamic]
 threadedMmtk             = wayFromUnits [Threaded, MMTK]
 debugMmtk                = wayFromUnits [Debug, MMTK]
-threadedMmtkDynamic = wayFromUnits [Threaded, MMTK, Dynamic]
-debugMmtkDynamic = wayFromUnits [Debug, MMTK, Dynamic]
+threadedMmtkDynamic      = wayFromUnits [Threaded, MMTK, Dynamic]
+debugMmtkDynamic         = wayFromUnits [Debug, MMTK, Dynamic]
+threadedDebugMmtk        = wayFromUnits [Threaded, Debug, MMTK]
 
 -- | All ways supported by the build system.
 allWays :: [Way]
 allWays =
     [ vanilla, profiling, dynamic, profilingDynamic, threaded, debug
     , threadedDebug, threadedProfiling, threadedDynamic
+    , threadedMmtk, debugMmtk, threadedDebugMmtk, threadedMmtkDynamic, debugMmtkDynamic
     , threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic
     , debugProfiling, debugDynamic ]
 
