@@ -5,7 +5,7 @@ module Way (
     threadedDebug, threadedProfiling, threadedDynamic, threadedMmtk, 
     threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic,
     debugProfiling, debugDynamic, debugMmtk,
-    threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk,
+    mmtkDynamic, threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk,
     wayPrefix, waySuffix, hisuf, osuf, hcsuf, obootsuf, hibootsuf, ssuf
     ) where
 
@@ -43,7 +43,7 @@ mmtk = wayFromUnits [MMTK]
 threadedDebug, threadedProfiling, threadedDynamic,
     threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic,
     debugProfiling, debugDynamic, 
-    threadedMmtk, debugMmtk,threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk :: Way
+    threadedMmtk, debugMmtk, mmtkDynamic, threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk :: Way
 threadedDebug            = wayFromUnits [Threaded, Debug]
 threadedProfiling        = wayFromUnits [Threaded, Profiling]
 threadedDynamic          = wayFromUnits [Threaded, Dynamic]
@@ -57,6 +57,7 @@ debugMmtk                = wayFromUnits [Debug, MMTK]
 threadedMmtkDynamic      = wayFromUnits [Threaded, MMTK, Dynamic]
 debugMmtkDynamic         = wayFromUnits [Debug, MMTK, Dynamic]
 threadedDebugMmtk        = wayFromUnits [Threaded, Debug, MMTK]
+mmtkDynamic              = wayFromUnits [MMTK, Dynamic]
 
 -- | All ways supported by the build system.
 allWays :: [Way]
@@ -65,7 +66,7 @@ allWays =
     , threadedDebug, threadedProfiling, threadedDynamic
     , threadedMmtk, debugMmtk, threadedDebugMmtk, threadedMmtkDynamic, debugMmtkDynamic
     , threadedDebugProfiling, threadedDebugDynamic, threadedProfilingDynamic
-    , debugProfiling, debugDynamic ]
+    , debugProfiling, debugDynamic, mmtkDynamic ]
 
 wayPrefix :: Way -> String
 wayPrefix way | way == vanilla = ""

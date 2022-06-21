@@ -181,7 +181,7 @@ defaultRtsWays = Set.fromList <$>
       , debug, threadedDebug, mmtk, threadedMmtk, debugMmtk
       ]
   , notStage0 ? platformSupportsSharedLibs ? pure
-      [ dynamic, threadedDynamic, debugDynamic, threadedDebugDynamic
+      [ dynamic, threadedDynamic, mmtkDynamic, debugDynamic, threadedDebugDynamic
       , threadedMmtkDynamic, debugMmtkDynamic, threadedDebugMmtk
       ]
   ]
