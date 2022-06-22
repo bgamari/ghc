@@ -169,6 +169,7 @@ defaultLibraryWays = Set.fromList <$>
     [ pure [vanilla]
     , notStage0 ? pure [profiling]
     , notStage0 ? platformSupportsSharedLibs ? pure [dynamic]
+    , notStage0 ? pure [mmtk]
     ]
 
 -- | Default build ways for the RTS.
@@ -178,7 +179,7 @@ defaultRtsWays = Set.fromList <$>
   [ pure [vanilla, threaded]
   , notStage0 ? pure
       [ profiling, threadedProfiling, debugProfiling, threadedDebugProfiling
-      , debug, threadedDebug, mmtk, threadedMmtk, debugMmtk
+      , debug, threadedDebug, mmtk, threadedMmtk, threadedDebugMmtk, debugMmtk
       ]
   , notStage0 ? platformSupportsSharedLibs ? pure
       [ dynamic, threadedDynamic, mmtkDynamic, debugDynamic, threadedDebugDynamic
