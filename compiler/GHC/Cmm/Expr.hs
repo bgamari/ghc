@@ -14,6 +14,7 @@ module GHC.Cmm.Expr
     , GlobalReg(..), isArgReg, globalRegType
     , spReg, hpReg, spLimReg, hpLimReg, nodeReg
     , currentTSOReg, currentNurseryReg, hpAllocReg, cccsReg
+    , bumpAllocatorReg
     , node, baseReg
     , VGcPtr(..)
 
@@ -470,6 +471,7 @@ data GlobalReg
   | CCCS                -- Current cost-centre stack
   | CurrentTSO          -- pointer to current thread's TSO
   | CurrentNursery      -- pointer to allocation area
+  | BumpAllocator
   | HpAlloc             -- allocation count for heap check failure
 
                 -- We keep the address of some commonly-called
@@ -600,7 +602,7 @@ instance Ord GlobalReg where
 
 -- convenient aliases
 baseReg, spReg, hpReg, spLimReg, hpLimReg, nodeReg,
-  currentTSOReg, currentNurseryReg, hpAllocReg, cccsReg  :: CmmReg
+  currentTSOReg, currentNurseryReg, bumpAllocatorReg, hpAllocReg, cccsReg  :: CmmReg
 baseReg = CmmGlobal BaseReg
 spReg = CmmGlobal Sp
 hpReg = CmmGlobal Hp
@@ -609,6 +611,7 @@ spLimReg = CmmGlobal SpLim
 nodeReg = CmmGlobal node
 currentTSOReg = CmmGlobal CurrentTSO
 currentNurseryReg = CmmGlobal CurrentNursery
+bumpAllocatorReg = CmmGlobal BumpAllocator
 hpAllocReg = CmmGlobal HpAlloc
 cccsReg = CmmGlobal CCCS
 

@@ -46,6 +46,7 @@ module GHC.Cmm.Utils(
 
         baseExpr, spExpr, hpExpr, spLimExpr, hpLimExpr,
         currentTSOExpr, currentNurseryExpr, cccsExpr,
+        bumpAllocatorExpr,
 
         -- Tagging
         cmmTagMask, cmmPointerMask, cmmUntag, cmmIsTagged, cmmIsNotTagged,
@@ -615,6 +616,7 @@ blockTicks b = reverse $ foldBlockNodesF goStmt b []
 -- Access to common global registers
 
 baseExpr, spExpr, hpExpr, currentTSOExpr, currentNurseryExpr,
+  bumpAllocatorExpr,
   spLimExpr, hpLimExpr, cccsExpr :: CmmExpr
 baseExpr = CmmReg baseReg
 spExpr = CmmReg spReg
@@ -624,3 +626,4 @@ hpLimExpr = CmmReg hpLimReg
 currentTSOExpr = CmmReg currentTSOReg
 currentNurseryExpr = CmmReg currentNurseryReg
 cccsExpr = CmmReg cccsReg
+bumpAllocatorExpr = CmmReg bumpAllocatorReg

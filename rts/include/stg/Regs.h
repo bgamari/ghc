@@ -106,6 +106,8 @@ typedef struct {
   struct CostCentreStack_ * rCCCS;  /* current cost-centre-stack */
   struct StgTSO_ *     rCurrentTSO;
   struct nursery_ *    rNursery;
+  // set rcn to null if not using
+  struct BumpAllocator * rBumpAllocator;
   struct bdescr_ *     rCurrentNursery; /* Hp/HpLim point into this block */
   struct bdescr_ *     rCurrentAlloc;   /* for allocation using allocate() */
   StgWord         rHpAlloc;     /* number of *bytes* being allocated in heap */

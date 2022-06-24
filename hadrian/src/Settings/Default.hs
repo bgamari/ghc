@@ -169,7 +169,6 @@ defaultLibraryWays = Set.fromList <$>
     [ pure [vanilla]
     , notStage0 ? pure [profiling]
     , notStage0 ? platformSupportsSharedLibs ? pure [dynamic]
-    , notStage0 ? pure [mmtk]
     ]
 
 -- | Default build ways for the RTS.

@@ -21,6 +21,12 @@
 extern "C" {
 #endif
 
+typedef struct BumpAllocator {
+    void* tls;
+    void* cursor;
+    void* limit;
+}BumpAllocator;
+
 typedef void* MMTk_Mutator;
 
 // Initialize an MMTk instance
@@ -51,6 +57,12 @@ extern void* mmtk_alloc(MMTk_Mutator mutator,
                         ssize_t offset,
                         int allocator);
 
+// Slowpath allocation for an object
+extern void* mmtk_alloc_slow(MMTk_Mutator mutator,
+                             size_t size,
+                             size_t align,
+                             ssize_t offset,
+                             int allocator);
 
 // Perform post-allocation hooks or actions such as initializing object metadata
 extern void mmtk_post_alloc(MMTk_Mutator mutator,

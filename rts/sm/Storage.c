@@ -56,6 +56,11 @@
 
 #include "mmtk.h"
 
+// global variable; used in code gen compiler/GHC/StgToCmm.Foreign
+uint32_t is_MMTk = false;
+
+MmtkNursery* mmtk_nurseries = NULL;
+
 /*
  * All these globals require sm_mutex to access in THREADED_RTS mode.
  */
@@ -112,10 +117,9 @@ static void allocNurseries (uint32_t from, uint32_t to);
 static void assignNurseriesToCapabilities (uint32_t from, uint32_t to);
 static StgInd * lockCAF (StgRegTable *reg, StgIndStatic *caf);
 
-StgPtr rtsHeapAlloc(StgRegTable *reg, StgWord size_w) {
-    Capability *cap = regTableToCapability(reg);
+StgPtr rtsHeapAlloc(StgRegTable *cap, StgWord size_w) {
     printf("calling mmtk heap alloc from code gen \n");
-    return mmtk_alloc(cap, size_w*sizeof(W_), sizeof(W_), 0, 0);
+    return mmtk_alloc_slow(cap, size_w*sizeof(W_), sizeof(W_), 0, 0);
 }
 
 void
@@ -780,15 +784,8 @@ STATIC_INLINE void
 assignNurseryToCapability (Capability *cap, uint32_t n)
 {
 #if defined(MMTK_GHC)
-    // temperarily use a fake bdescr to wire with mmtk allocation
-    // TODO: change stg nursry to not use bdescr    
-    struct nursery_* nur = stgMallocBytes(sizeof(nursery), "fake nursery block for mmtk nursery");
-    nur->blocks = mmtk_nurseries[n].bd;
-    nur->n_blocks = BLOCKS_PER_MBLOCK;
-
-    cap->r.rNursery = nur;
-    cap->r.rCurrentNursery = mmtk_nurseries[n].bd;
-    cap->r.rCurrentAlloc   = mmtk_nurseries[n].bd;
+    cap->r.rNursery = NULL;
+    cap->r.rCurrentNursery = NULL;
     cap->r.rCurrentAlloc   = NULL;
 #else
     ASSERT(n < n_nurseries);
@@ -830,14 +827,10 @@ allocNurseries (uint32_t from, uint32_t to)
 
     for (i = from; i < to; i++) {
 #if defined(MMTK_GHC)
-        StgPtr p = mmtk_alloc(capabilities[i]->mmutator, 10*MBLOCK_SIZE, sizeof(W_), 0, 0);
-        struct bdescr_* bd = stgMallocBytes(sizeof(bdescr), "fake bd for mmtk nursery");
-        bd->start = p;
-        bd->free = bd->start;
-        bd->blocks = BLOCKS_PER_MBLOCK;
-        initBdescr(bd, g0, g0);
-        bd->link = bd;
-        mmtk_nurseries[i].bd = bd;
+    void* nur = stgMallocBytes(sizeof(void), "create init pionter");
+    // trigger heapStackCheck to alloate using mmtk immediately
+    mmtk_nurseries[n].start = (void *) nur;
+    mmtk_nurseries[n].free = mmtk_nurseries[n].start;
 #else
         nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
         nurseries[i].n_blocks = n_blocks;

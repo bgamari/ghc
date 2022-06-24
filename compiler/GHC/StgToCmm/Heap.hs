@@ -119,10 +119,11 @@ allocHeapClosure
   -> [(CmmExpr,ByteOff)]              -- ^ payload
   -> FCode CmmExpr                    -- ^ returns the address of the object
 allocHeapClosure rep info_ptr use_cc payload = do
-  profile <- getProfile
-  if profileWays profile `hasWay` WayMMTK
-    then allocHeapClosureMmtk rep info_ptr use_cc payload
-    else allocHeapClosureGhcsm rep info_ptr use_cc payload
+  allocHeapClosureGhcsm rep info_ptr use_cc payload
+  -- profile <- getProfile
+  -- if profileWays profile `hasWay` WayMMTK
+  --   then allocHeapClosureMmtk rep info_ptr use_cc payload
+  --   else allocHeapClosureGhcsm rep info_ptr use_cc payload
 
 allocHeapClosureGhcsm
   :: SMRep                            -- ^ representation of the object

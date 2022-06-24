@@ -363,10 +363,14 @@ wanteds os = concat
           ,fieldOffset Both "StgRegTable" "rHpLim"
           ,fieldOffset Both "StgRegTable" "rCCCS"
           ,fieldOffset Both "StgRegTable" "rCurrentTSO"
+          ,structField C "StgRegTable" "rBumpAllocator"
           ,fieldOffset Both "StgRegTable" "rCurrentNursery"
           ,fieldOffset Both "StgRegTable" "rHpAlloc"
           ,structField C    "StgRegTable" "rRet"
           ,structField C    "StgRegTable" "rNursery"
+
+          ,structField Both "BumpAllocator" "cursor"
+          ,structField Both "BumpAllocator" "limit"
 
           ,defIntOffset Both "stgEagerBlackholeInfo"
                              "FUN_OFFSET(stgEagerBlackholeInfo)"
@@ -732,6 +736,7 @@ getWanted verbose os tmpdir gccProgram gccFlags nmProgram mobjdumpProgram
                      "#include \"Rts.h\"",
                      "#include \"StableName.h\"",
                      "#include \"Capability.h\"",
+                     "#include \"include/mmtk.h\"",
                      "",
                      "#include <inttypes.h>",
                      "#include <stddef.h>",

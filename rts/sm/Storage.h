@@ -16,11 +16,14 @@
    Initialisation / De-initialisation
    -------------------------------------------------------------------------- */
 typedef struct MmtkNursery {
-   bdescr *bd;
+   StgPtr start;
+   StgPtr free;
+   StgPtr end;
+   // bdescr *bd;
    /* add some other fields if needed*/
 } MmtkNursery;
 
-MmtkNursery* mmtk_nurseries;
+extern MmtkNursery* mmtk_nurseries;
 
 StgPtr rtsHeapAlloc(StgRegTable *reg, StgWord size_w);
 
