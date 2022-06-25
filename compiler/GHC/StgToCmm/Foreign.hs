@@ -472,6 +472,8 @@ closeNursery profile tscp tso = do
       limit_reg <- CmmLocal <$> newTemp (bWord platform)
       pure $ catAGraphs [
         mkAssign bump_alloc_reg bumpAllocatorExpr,
+        mkAssign cursor_reg (cmmLoadBWord platform (bumpAllocator_cursor platform bump_alloc_reg)),
+        mkAssign limit_reg (cmmLoadBWord platform (bumpAllocator_limit platform bump_alloc_reg)),
 
         -- Hp = BumpAlloc->cursor + 1
         mkAssign hpReg (cmmOffsetW platform (CmmReg cursor_reg) 1),

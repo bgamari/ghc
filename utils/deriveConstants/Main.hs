@@ -363,7 +363,7 @@ wanteds os = concat
           ,fieldOffset Both "StgRegTable" "rHpLim"
           ,fieldOffset Both "StgRegTable" "rCCCS"
           ,fieldOffset Both "StgRegTable" "rCurrentTSO"
-          ,structField C "StgRegTable" "rBumpAllocator"
+          ,fieldOffset Both "StgRegTable" "rBumpAllocator"
           ,fieldOffset Both "StgRegTable" "rCurrentNursery"
           ,fieldOffset Both "StgRegTable" "rHpAlloc"
           ,structField C    "StgRegTable" "rRet"
