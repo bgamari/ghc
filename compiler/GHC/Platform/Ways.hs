@@ -235,6 +235,21 @@ hostIsDynamic = rtsIsDynamic_ /= 0
 foreign import ccall unsafe "rts_isDynamic" rtsIsDynamic_ :: Int
 
 -- we need this until the bootstrap GHC is always recent enough
+#if MIN_VERSION_GLASGOW_HASKELL(9,3,0,0)
+
+-- | Consult the RTS to find whether it is in MMTK mode.
+hostIsMMTK :: Bool
+hostIsMMTK = rts_isMMTK_ /= 0
+
+foreign import ccall unsafe "rts_isMMTK" rts_isMMTK_ :: Int
+
+#else
+
+hostIsMMTK :: Bool
+hostIsMMTK = False
+
+#endif
+
 #if MIN_VERSION_GLASGOW_HASKELL(9,1,0,0)
 
 -- | Consult the RTS to find whether it is threaded.
@@ -254,12 +269,6 @@ hostIsTracing :: Bool
 hostIsTracing = rtsIsTracing_ /= 0
 
 foreign import ccall unsafe "rts_isTracing" rtsIsTracing_ :: Int
-
--- | Consult the RTS to find whether it is in MMTK mode.
-hostIsMMTK :: Bool
-hostIsMMTK = rts_isMMTK_ /= 0 
-
-foreign import ccall unsafe "rts_isMMTK" rts_isMMTK_ :: Int
 
 #else
 
