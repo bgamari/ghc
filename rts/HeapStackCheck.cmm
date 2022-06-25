@@ -95,19 +95,6 @@ stg_gc_noregs
         }
         // when allocation fail, and there is another chunk of allocated nursery
         // call mmtk_alloc_slow, ask alloc size = HpAlloc
-#if defined(MMTK_GHC)
-        // BumpAllocator_cursor = Hp
-        // BumpAllocator_limit  = HpLim
-        W_ allocator;
-        (allocator) = ccall rtsHeapAlloc(MyCapability(), HpAlloc);
-        CLOSE_NURSERY();
-        // advance the cursor backward
-        // BumpAllocator_cursor = BumpAllocator_cursor - HpAlloc
-        // HpAlloc = 0;
-        OPEN_NURSERY();
-        // Hp = BumpAllocator_cursor
-        // HpLim = BumpAllocator_limit
-#else
         if (HpAlloc <= BLOCK_SIZE
             && bdescr_link(CurrentNursery) != NULL) {
             HpAlloc = 0;
@@ -132,7 +119,6 @@ stg_gc_noregs
             ret = HeapOverflow;
             goto sched;
         }
-#endif
     } else {
         if (CHECK_GC()) {
             ret = HeapOverflow;

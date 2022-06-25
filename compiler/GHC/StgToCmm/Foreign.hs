@@ -288,15 +288,16 @@ maybe_assign_temp e = do
 emitSaveThreadState :: FCode ()
 emitSaveThreadState = do
   profile <- getProfile
-  code <- saveThreadState profile
+  tscp <- getTickScope
+  code <- saveThreadState profile tscp
   emit code
 
 -- | Produce code to save the current thread state to @CurrentTSO@
-saveThreadState :: MonadUnique m => Profile -> m CmmAGraph
-saveThreadState profile = do
+saveThreadState :: MonadUnique m => Profile -> CmmTickScope -> m CmmAGraph
+saveThreadState profile tscp = do
   let platform = profilePlatform profile
   tso <- newTemp (gcWord platform)
-  close_nursery <- closeNursery profile tso
+  close_nursery <- closeNursery profile tscp tso
   pure $ catAGraphs
    [ -- tso = CurrentTSO;
      mkAssign (CmmLocal tso) currentTSOExpr
@@ -405,7 +406,8 @@ emitCloseNursery = do
   profile <- getProfile
   let platform = profilePlatform profile
   tso <- newTemp (bWord platform)
-  code <- closeNursery profile tso
+  tscp <- getTickScope
+  code <- closeNursery profile tscp tso
   emit $ mkAssign (CmmLocal tso) currentTSOExpr <*> code
 
 {- |
@@ -429,12 +431,11 @@ Closing the nursery corresponds to the following code:
   cn->free = Hp + WDS(1);
 @
 -}
-closeNursery :: MonadUnique m => Profile -> LocalReg -> m CmmAGraph
-closeNursery profile tso = do
+closeNursery :: MonadUnique m => Profile -> CmmTickScope -> LocalReg -> m CmmAGraph
+closeNursery profile tscp tso = do
     ghcsm <- ghcsm_path
     mmtk <- mmtk_path
-    -- mkCmmIfThenElse is_MMTk mmtk ghc
-    pure ghcsm
+    mkCmmIfThenElseUniq tscp is_MMTk mmtk ghcsm (Just False)
   where
     tsoreg   = CmmLocal tso
     platform = profilePlatform profile
@@ -485,16 +486,17 @@ closeNursery profile tso = do
 emitLoadThreadState :: FCode ()
 emitLoadThreadState = do
   profile <- getProfile
-  code <- loadThreadState profile
+  tscp <- getTickScope 
+  code <- loadThreadState profile tscp
   emit code
 
 -- | Produce code to load the current thread state from @CurrentTSO@
-loadThreadState :: MonadUnique m => Profile -> m CmmAGraph
-loadThreadState profile = do
+loadThreadState :: MonadUnique m => Profile -> CmmTickScope -> m CmmAGraph
+loadThreadState profile tscp = do
   let platform = profilePlatform profile
   tso <- newTemp (gcWord platform)
   stack <- newTemp (gcWord platform)
-  open_nursery <- openNursery profile tso
+  open_nursery <- openNursery profile tscp tso
   pure $ catAGraphs [
     -- tso = CurrentTSO;
     mkAssign (CmmLocal tso) currentTSOExpr,
@@ -523,7 +525,8 @@ emitOpenNursery = do
   profile <- getProfile
   let platform = profilePlatform profile
   tso <- newTemp (bWord platform)
-  code <- openNursery profile tso
+  tscp <- getTickScope
+  code <- openNursery profile tscp tso
   emit $ mkAssign (CmmLocal tso) currentTSOExpr <*> code
 
 {- |
@@ -554,12 +557,11 @@ Opening the nursery corresponds to the following code:
    HpLim = bdstart + CurrentNursery->blocks*BLOCK_SIZE_W - 1;
 @
 -}
-openNursery :: MonadUnique m => Profile -> LocalReg -> m CmmAGraph
-openNursery profile tso = do
+openNursery :: MonadUnique m => Profile -> CmmTickScope -> LocalReg -> m CmmAGraph
+openNursery profile tscp tso = do
     ghcsm <- ghcsm_path
     mmtk <- mmtk_path
-    -- mkCmmIfThenElse is_MMTk mmtk ghc
-    pure ghcsm
+    mkCmmIfThenElseUniq tscp is_MMTk mmtk ghcsm (Just False)
   where
     tsoreg   = CmmLocal tso
     platform = profilePlatform profile

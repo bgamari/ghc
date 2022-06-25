@@ -1144,8 +1144,8 @@ lowerSafeForeignCall profile block
     id <- newTemp (bWord platform)
     new_base <- newTemp (cmmRegType platform baseReg)
     let (caller_save, caller_load) = callerSaveVolatileRegs platform
-    save_state_code <- saveThreadState profile
-    load_state_code <- loadThreadState profile
+    save_state_code <- saveThreadState profile tscp
+    load_state_code <- loadThreadState profile tscp
     let suspend = save_state_code  <*>
                   caller_save <*>
                   mkMiddle (callSuspendThread platform id intrbl)
