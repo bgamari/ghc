@@ -826,15 +826,15 @@ allocNurseries (uint32_t from, uint32_t to)
     }
 
     for (i = from; i < to; i++) {
-// #if defined(MMTK_GHC)
-//     void* nur = stgMallocBytes(sizeof(void), "create init pionter");
-//     // trigger heapStackCheck to alloate using mmtk immediately
-//     mmtk_nurseries[n].start = (void *) nur;
-//     mmtk_nurseries[n].free = mmtk_nurseries[n].start;
-// #else
+#if defined(MMTK_GHC)
+    void* nur = stgMallocBytes(sizeof(W_), "create init pionter");
+    // trigger heapStackCheck to alloate using mmtk immediately
+    mmtk_nurseries[n].start = (void *) nur;
+    mmtk_nurseries[n].free = mmtk_nurseries[n].start;
+#else
         nurseries[i].blocks = allocNursery(capNoToNumaNode(i), NULL, n_blocks);
         nurseries[i].n_blocks = n_blocks;
-//#endif
+#endif
     }
 }
 

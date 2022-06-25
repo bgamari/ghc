@@ -473,6 +473,9 @@ callerSaves CurrentTSO        = True
 #if defined(CALLER_SAVES_CurrentNursery)
 callerSaves CurrentNursery    = True
 #endif
+#if defined(CALLER_SAVES_BumpAllocator)
+callerSaves BumpAllocator    = True
+#endif
 callerSaves _                 = False
 
 activeStgRegs :: [GlobalReg]
@@ -817,6 +820,9 @@ globalRegMaybe CurrentTSO               = Just (RealRegSingle REG_CurrentTSO)
 # endif
 # if defined(REG_CurrentNursery)
 globalRegMaybe CurrentNursery           = Just (RealRegSingle REG_CurrentNursery)
+# endif
+# if defined(REG_BumpAllocator)
+globalRegMaybe BumpAllocator           = Just (RealRegSingle REG_BumpAllocator)
 # endif
 # if defined(REG_MachSp)
 globalRegMaybe MachSp                   = Just (RealRegSingle REG_MachSp)

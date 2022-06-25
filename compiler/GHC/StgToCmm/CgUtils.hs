@@ -88,6 +88,7 @@ baseRegOffset platform reg = case reg of
    CCCS                 -> pc_OFFSET_StgRegTable_rCCCS           constants
    CurrentTSO           -> pc_OFFSET_StgRegTable_rCurrentTSO     constants
    CurrentNursery       -> pc_OFFSET_StgRegTable_rCurrentNursery constants
+   BumpAllocator        -> pc_OFFSET_StgRegTable_rBumpAllocator  constants
    HpAlloc              -> pc_OFFSET_StgRegTable_rHpAlloc        constants
    EagerBlackholeInfo   -> pc_OFFSET_stgEagerBlackholeInfo       constants
    GCEnter1             -> pc_OFFSET_stgGCEnter1                 constants

@@ -1097,6 +1097,7 @@ isStrangeTypeGlobal :: GlobalReg -> Bool
 isStrangeTypeGlobal CCCS                = True
 isStrangeTypeGlobal CurrentTSO          = True
 isStrangeTypeGlobal CurrentNursery      = True
+isStrangeTypeGlobal BumpAllocator       = True
 isStrangeTypeGlobal BaseReg             = True
 isStrangeTypeGlobal r                   = isFixedPtrGlobalReg r
 
@@ -1104,6 +1105,7 @@ strangeRegType :: CmmReg -> Maybe SDoc
 strangeRegType (CmmGlobal CCCS) = Just (text "struct CostCentreStack_ *")
 strangeRegType (CmmGlobal CurrentTSO) = Just (text "struct StgTSO_ *")
 strangeRegType (CmmGlobal CurrentNursery) = Just (text "struct bdescr_ *")
+strangeRegType (CmmGlobal BumpAllocator) = Just (text "struct BumpAllocator *")
 strangeRegType (CmmGlobal BaseReg) = Just (text "struct StgRegTable_ *")
 strangeRegType _ = Nothing
 
@@ -1135,6 +1137,7 @@ pprGlobalReg gr = case gr of
     CCCS           -> text "CCCS"
     CurrentTSO     -> text "CurrentTSO"
     CurrentNursery -> text "CurrentNursery"
+    BumpAllocator  -> text "BumpAllocator"
     HpAlloc        -> text "HpAlloc"
     BaseReg        -> text "BaseReg"
     EagerBlackholeInfo -> text "stg_EAGER_BLACKHOLE_info"

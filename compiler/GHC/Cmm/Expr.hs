@@ -521,6 +521,7 @@ instance Eq GlobalReg where
    CCCS == CCCS = True
    CurrentTSO == CurrentTSO = True
    CurrentNursery == CurrentNursery = True
+   BumpAllocator == BumpAllocator = True
    HpAlloc == HpAlloc = True
    EagerBlackholeInfo == EagerBlackholeInfo = True
    GCEnter1 == GCEnter1 = True
@@ -549,6 +550,7 @@ instance Ord GlobalReg where
    compare CCCS CCCS = EQ
    compare CurrentTSO CurrentTSO = EQ
    compare CurrentNursery CurrentNursery = EQ
+   compare BumpAllocator BumpAllocator = EQ
    compare HpAlloc HpAlloc = EQ
    compare EagerBlackholeInfo EagerBlackholeInfo = EQ
    compare GCEnter1 GCEnter1 = EQ
@@ -585,6 +587,8 @@ instance Ord GlobalReg where
    compare _ CurrentTSO = GT
    compare CurrentNursery _ = LT
    compare _ CurrentNursery = GT
+   compare BumpAllocator _ = LT
+   compare _ BumpAllocator = GT
    compare HpAlloc _ = LT
    compare _ HpAlloc = GT
    compare GCEnter1 _ = LT

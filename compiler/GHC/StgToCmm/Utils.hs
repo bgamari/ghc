@@ -232,7 +232,7 @@ callerSaveVolatileRegs platform = (caller_save, caller_load)
     caller_save = catAGraphs (map (callerSaveGlobalReg    platform) regs_to_save)
     caller_load = catAGraphs (map (callerRestoreGlobalReg platform) regs_to_save)
 
-    system_regs = [ Sp,SpLim,Hp,HpLim,CCCS,CurrentTSO,CurrentNursery
+    system_regs = [ Sp,SpLim,Hp,HpLim,CCCS,CurrentTSO,CurrentNursery, BumpAllocator
                     {- ,SparkHd,SparkTl,SparkBase,SparkLim -}
                   , BaseReg ]
 

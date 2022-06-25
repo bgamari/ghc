@@ -1145,6 +1145,7 @@ isPtrGlobalReg HpLim                 = True
 isPtrGlobalReg CCCS                  = True
 isPtrGlobalReg CurrentTSO            = True
 isPtrGlobalReg CurrentNursery        = True
+isPtrGlobalReg BumpAllocator         = True
 isPtrGlobalReg (VanillaReg _ VGcPtr) = True
 isPtrGlobalReg _                     = False
 

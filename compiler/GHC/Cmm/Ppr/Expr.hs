@@ -286,6 +286,7 @@ pprGlobalReg gr
         CCCS           -> text "CCCS"
         CurrentTSO     -> text "CurrentTSO"
         CurrentNursery -> text "CurrentNursery"
+        BumpAllocator  -> text "BumpAllocatorReg"
         HpAlloc        -> text "HpAlloc"
         EagerBlackholeInfo -> text "stg_EAGER_BLACKHOLE_info"
         GCEnter1       -> text "stg_gc_enter_1"

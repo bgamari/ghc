@@ -111,6 +111,7 @@ $white_no_nl+           ;
   CCCS                  { global_reg CCCS }
   CurrentTSO            { global_reg CurrentTSO }
   CurrentNursery        { global_reg CurrentNursery }
+  BumpAllocator         { global_reg BumpAllocator }
   HpAlloc               { global_reg HpAlloc }
   BaseReg               { global_reg BaseReg }
   MachSp                { global_reg MachSp }
