@@ -22,6 +22,8 @@ module GHC.Cmm.Dataflow.Graph
 
 import GHC.Prelude
 import GHC.Utils.Misc
+import GHC.Utils.Outputable
+import GHC.Utils.Panic
 
 import GHC.Cmm.Dataflow.Label
 import GHC.Cmm.Dataflow.Block
@@ -183,6 +185,6 @@ revPostorderFrom graph start = go start_worklist setEmpty []
     lookup_for_descend label wl
       | Just b <- mapLookup label graph = ConsTodo b wl
       | otherwise =
-           error $ "Label that doesn't have a block?! " ++ show label
+           pprPanic "Label that doesn't have a block?!" (ppr label)
 
 data DfsStack a = ConsTodo a (DfsStack a) | ConsMark a (DfsStack a) | Nil
