@@ -119,7 +119,8 @@ static StgInd * lockCAF (StgRegTable *reg, StgIndStatic *caf);
 
 StgPtr rtsHeapAlloc(StgRegTable *cap, StgWord size_w) {
     printf("calling mmtk heap alloc from code gen \n");
-    return mmtk_alloc_slow(cap, size_w*sizeof(W_), sizeof(W_), 0, 0);
+    //return mmtk_alloc_slow(cap, size_w*sizeof(W_), sizeof(W_), 0, 0);
+    return NULL;
 }
 
 void
