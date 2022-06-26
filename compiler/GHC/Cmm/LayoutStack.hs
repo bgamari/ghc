@@ -20,6 +20,7 @@ import GHC.Cmm.Utils
 import GHC.Cmm.Graph
 import GHC.Cmm.Liveness
 import GHC.Cmm.ProcPoint
+import GHC.Cmm.Ppr
 import GHC.Runtime.Heap.Layout
 import GHC.Cmm.Dataflow.Block
 import GHC.Cmm.Dataflow.Collections
@@ -1184,7 +1185,7 @@ lowerSafeForeignCall profile block
     case toBlockList graph' of
       [one] -> let (_, middle', last) = blockSplit one
                in return (blockJoin entry (middle `blockAppend` middle') last)
-      _ -> panic "lowerSafeForeignCall0"
+      _ -> pprPanic "lowerSafeForeignCall0" (pdoc platform graph')
 
   -- Block doesn't end in a safe foreign call:
   | otherwise = return block
