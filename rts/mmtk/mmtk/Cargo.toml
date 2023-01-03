@@ -14,7 +14,6 @@ lto = true
 
 [package.metadata.ghc]
 ghc_repo = "https://gitlab.haskell.org/ghc/ghc"
-# ghc_version = "a4313b7f470afdc49bb9b1d32fd205c1e94db367" # dummy version (HEAD)
 
 [build-dependencies]
 bindgen = "0.60.1"

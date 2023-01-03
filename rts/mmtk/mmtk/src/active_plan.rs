@@ -9,6 +9,7 @@ use crate::SINGLETON;
 use crate::ghc::*;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
+use crate::types::StgClosureType::*;
 
 
 static mut STATIC_FLAG: bool = false;
@@ -79,7 +80,8 @@ impl ActivePlan<GHCVM> for VMActivePlan {
         let mut evacuate_static = |static_link: &mut TaggedClosureRef| -> bool {
             let cur_static_flag = if get_static_flag() { 2 } else { 1 };
             let prev_static_flag = if get_static_flag() { 1 } else { 2 };
-            let object_visited: bool = (static_link.get_tag() | prev_static_flag) != 3;
+            // TODO: structure this flag bump differently
+            let object_visited: bool = (static_link.get_tag() | prev_static_flag) == 3;
             if !object_visited {
                 // N.B. We don't need to maintain a list of static objects, therefore ZERO
                 *static_link = TaggedClosureRef::from_address(Address::ZERO).set_tag(cur_static_flag);
@@ -115,9 +117,14 @@ impl ActivePlan<GHCVM> for VMActivePlan {
                 evacuate_static(&mut ind.static_link);
             },
             Constr(constr) => {
-                let offset = unsafe { info_table.layout.payload.ptrs + info_table.layout.payload.nptrs };
-                let static_link_ref = constr.payload.get_ref(offset as usize);
-                evacuate_static(static_link_ref);
+                if (info_table.type_ != CONSTR_0_1) &&
+                    (info_table.type_ != CONSTR_0_2) && 
+                    (info_table.type_ != CONSTR_NOCAF) 
+                {
+                    let offset = unsafe { info_table.layout.payload.ptrs + info_table.layout.payload.nptrs };
+                    let static_link_ref = constr.payload.get_ref(offset as usize);
+                    evacuate_static(static_link_ref);
+                }
             },
             _ => panic!("invalid static closure"),
         };

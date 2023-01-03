@@ -252,3 +252,6 @@ dist-newstyle/
 
 # fibonacci test
 fibo
+
+# Heap graph
+*.dot
