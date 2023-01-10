@@ -848,6 +848,7 @@ static void dump_heap(std::ofstream& of)
                 break;
         }
 
+#if !defined(MMTK)
         if (!HEAP_ALLOCED((StgPtr) c)) {
             of << n << " [static=yes];\n";
         } else {
@@ -876,12 +877,19 @@ static void dump_heap(std::ofstream& of)
                 of << n << " [moving=yes];\n";
             }
         }
+#endif
+
         for (TaggedClosurePtr p : collect_pointers(c)) {
             of << n << " -> " << NodeName(p.untag()) << ";\n";
             env.enqueue(p);
         }
     }
     of << "}\n";
+}
+
+extern "C" {
+void check_gc();
+void dump_heap_to(const char *fname);
 }
 
 void dump_heap_to(const char *fname)
@@ -918,6 +926,7 @@ void check_gc()
             continue;
         }
 
+#if !defined(MMTK_GHC)
         const StgInfoTable *info = get_itbl(c);
         if (!HEAP_ALLOCED((StgPtr) c)) {
             switch (info->type) {
@@ -963,6 +972,7 @@ void check_gc()
                 }
             }
         }
+#endif
     }
 
     if (!errors.empty()) {
