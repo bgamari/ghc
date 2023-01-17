@@ -60,7 +60,8 @@ impl Collection<GHCVM> for VMCollection {
     fn prepare_mutator<T: MutatorContext<GHCVM>>(_tls_w: VMWorkerThread, _tls_m: VMMutatorThread, _mutator: &T) {
     }
 
-    fn vm_release() {
+    // previously: Collection::vm_release
+    fn post_forwarding(_worker: VMWorkerThread) {
         crate::active_plan::bump_static_flag();
     }
     
