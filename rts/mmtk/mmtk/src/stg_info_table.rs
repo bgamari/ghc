@@ -121,7 +121,7 @@ impl LargeBitMapPayload {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct StgLargeBitmapRef {
     pub offset : StgInt
     // TODO: handle non TABLES_NEXT_TO_CODE
@@ -140,6 +140,7 @@ impl StgLargeBitmapRef {
    Info Tables
    ------------------------------------------------------------------------- */
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct StgPointerFirst {
     pub ptrs    : StgHalfWord,  /* number of pointers */
     pub nptrs   : StgHalfWord,  /* number of non-pointers */

@@ -43,10 +43,11 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut Mutator<GHCVM>) {
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_get_nursery_allocator(mutator: *mut Mutator<GHCVM>) -> *mut mmtk::util::alloc::BumpAllocator<GHCVM> {
+pub extern "C" fn mmtk_get_nursery_allocator(mutator: *mut Mutator<GHCVM>) -> *mut mmtk::util::alloc::ImmixAllocator<GHCVM> {
     let mutator = unsafe { &mut *mutator };
-    let allocator = unsafe { mutator.allocators.bump_pointer[0].assume_init_mut() };
-    allocator
+    let selector = memory_manager::get_allocator_mapping(&SINGLETON, AllocationSemantics::Default);
+    let allocator = unsafe { mutator.allocators.get_allocator_mut(selector) };
+    allocator.downcast_mut().unwrap()
 }
 
 #[no_mangle]
@@ -61,9 +62,9 @@ pub extern "C" fn mmtk_alloc(mutator: *mut Mutator<GHCVM>, size: usize,
 #[no_mangle]
 pub extern "C" fn mmtk_alloc_slow(mutator: *mut Mutator<GHCVM>, size: usize,
                     align: usize, offset: isize) -> Address {
-    use crate::mmtk::util::alloc::Allocator;
     let mutator = unsafe { &mut *mutator };
-    let allocator = unsafe { mutator.allocators.bump_pointer[0].assume_init_mut() };
+    let selector = memory_manager::get_allocator_mapping(&SINGLETON, AllocationSemantics::Default);
+    let allocator = unsafe { mutator.allocators.get_allocator_mut(selector) };
     allocator.alloc_slow(size, align, offset)
 }
 

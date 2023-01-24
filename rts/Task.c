@@ -255,6 +255,7 @@ newTask (bool worker)
 #if defined(MMTK_GHC)
     task->mmutator = mmtk_bind_mutator(task);
     BumpAllocator *bump_alloc = mmtk_get_nursery_allocator(task->mmutator);
+    task->mmtk_bump_allocator = bump_alloc;
 
     // We set the initial cursor and limit of the MMTk BumpAllocator used
     // by the STG machine such that they are
@@ -266,8 +267,6 @@ newTask (bool worker)
 
     // rts_mutator is used by allocate() and friends.
     task->rts_mutator = mmtk_bind_mutator((void*) ((uintptr_t) task + 1));
-
-    // mmtk_initialize_collection(task);
 #endif
 
     RELEASE_LOCK(&all_tasks_mutex);

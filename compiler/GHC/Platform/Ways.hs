@@ -235,7 +235,7 @@ hostIsDynamic = rtsIsDynamic_ /= 0
 foreign import ccall unsafe "rts_isDynamic" rtsIsDynamic_ :: Int
 
 -- we need this until the bootstrap GHC is always recent enough
-#if MIN_VERSION_GLASGOW_HASKELL(9,3,0,0)
+#if MIN_VERSION_GLASGOW_HASKELL(9,7,0,0)
 
 -- | Consult the RTS to find whether it is in MMTK mode.
 hostIsMMTK :: Bool

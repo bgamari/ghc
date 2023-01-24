@@ -1,6 +1,3 @@
-#![feature(untagged_unions)]
-#![feature(if_let_guard)]
-
 extern crate mmtk;
 extern crate libc;
 #[macro_use]

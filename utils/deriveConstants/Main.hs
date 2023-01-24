@@ -408,6 +408,7 @@ wanteds os = concat
           ,structField Both "Capability" "running_task"
 
           ,structField Both "Task" "mmutator"
+          ,structField Both "Task" "mmtk_bump_allocator"
 
           ,structField Both "bdescr" "start"
           ,structField Both "bdescr" "free"

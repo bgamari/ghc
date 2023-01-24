@@ -9,6 +9,13 @@ name = "mmtk_ghc"
 # be careful - LTO is only allowed for certain crate types
 crate-type = ["staticlib"]
 
+[profile.dev]
+opt-level = 1
+overflow-checks = true
+debug = true
+debug-assertions = true
+lto = false
+
 [profile.release]
 lto = true
 
@@ -16,7 +23,7 @@ lto = true
 ghc_repo = "https://gitlab.haskell.org/ghc/ghc"
 
 [build-dependencies]
-bindgen = "0.60.1"
+bindgen = "0.63.0"
 
 [dependencies]
 libc = "0.2"
@@ -24,7 +31,7 @@ lazy_static = "1.1"
 atomic_refcell = "0.1.7"
 # mmtk = { git = "https://github.com/mmtk/mmtk-core.git", rev = "cd6d8984c10c294c991dcd5f154ce41073c06ab9" }
 # Uncomment the following to build locally
-mmtk = { path = "../mmtk-core", features=["immix_no_defrag", "work_packet_stats", "extreme_assertions", "immix_zero_on_release"] }
+mmtk = { path = "../mmtk-core", features=["immix_no_defrag", "work_packet_stats", "immix_zero_on_release"] }
 
 [features]
 default = []

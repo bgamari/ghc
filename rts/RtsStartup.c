@@ -383,6 +383,10 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
 
     initStorage();
 
+#if defined(MMTK_GHC)
+    mmtk_initialize_collection(capabilities[0]->running_task);
+#endif
+
     /* initialise the stable pointer table */
     initStablePtrTable();
 
@@ -434,11 +438,6 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
 
     /* Record initialization times */
     stat_endInit();
-
-#if defined(MMTK_GHC)
-    mmtk_initialize_collection(capabilities[0]->running_task);
-#endif
-
 }
 
 // Compatibility interface

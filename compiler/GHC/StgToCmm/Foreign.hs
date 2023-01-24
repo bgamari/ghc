@@ -619,8 +619,9 @@ openNursery profile tscp tso = do
     -- care to account for this offset when opening/closing the nursery.
     --
     -- In the case of the limit semantics, STG's HpLim register points to the
-    -- last byte *inside* of the nursery, which is the same as MMTk's
-    -- semantics.
+    -- last byte *inside* of the nursery, which is not the same as MMTk's
+    -- semantics. MMTK's BumpAllocator::limit points to the first byte outside
+    -- the nursery.
     mmtk_path = do
       bump_alloc_reg <- CmmLocal <$> newTemp (bWord platform)
       cursor_reg  <- CmmLocal <$> newTemp (bWord platform)
@@ -633,8 +634,8 @@ openNursery profile tscp tso = do
           -- Hp = BumpAlloc->cursor - WORD_SIZE
           mkAssign hpReg $ cmmOffsetW platform (CmmReg cursor_reg) (-1),
 
-          -- HpLim = BumpAlloc->limit
-          mkAssign hpLimReg (cmmOffsetW platform (CmmReg limit_reg) (-1))
+          -- HpLim = BumpAlloc->limit - 1
+          mkAssign hpLimReg (cmmOffset platform (CmmReg limit_reg) (-1))
 
           -- TODO: alloc = bd->free - bd->start
         ]
@@ -646,10 +647,7 @@ mmtkBumpAllocator platform =
     pc = platformConstants platform
     capability_addr = cmmOffset platform baseExpr (negate $ pc_OFFSET_Capability_r pc)                             -- :: Ptr Capability
     task_addr = cmmLoadBWord platform (cmmOffset platform capability_addr (pc_OFFSET_Capability_running_task pc))  -- :: Ptr Task
-    mutator_addr = cmmLoadBWord platform (cmmOffset platform task_addr (pc_OFFSET_Task_mmutator pc))               -- :: Ptr MMTK_Mutator
-    -- TODO: Account for potential offset; we currently assume that `mutator.allocators.bump_allocator[0]` is
-    -- at offset 0 of `mutator`
-    bump_alloc_addr = mutator_addr                                                                                 -- :: Ptr BumpAllocator
+    bump_alloc_addr = cmmLoadBWord platform (cmmOffset platform task_addr (pc_OFFSET_Task_mmtk_bump_allocator pc)) -- :: Ptr BumpAllocator
 
 nursery_bdescr_free, nursery_bdescr_start, nursery_bdescr_blocks
   , bumpAllocator_cursor, bumpAllocator_limit

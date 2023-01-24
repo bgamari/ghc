@@ -2789,7 +2789,8 @@ initScheduler(void)
    * bound thread on Capability 0 pretty soon, so we don't want a
    * worker task hogging it.
    */
-  startWorkerTasks(1, n_capabilities);
+  // TODO: might not be necessary for mmtk
+  startWorkerTasks(0, n_capabilities);
 
   RELEASE_LOCK(&sched_mutex);
 

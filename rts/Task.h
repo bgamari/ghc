@@ -169,6 +169,7 @@ typedef struct Task_ {
     // MMTk mutator (per OS thread)
     void *mmutator;
     void *rts_mutator;
+    BumpAllocator *mmtk_bump_allocator;
 } Task;
 
 INLINE_HEADER bool
