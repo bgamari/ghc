@@ -54,7 +54,8 @@ pub fn markCapabilities<F: Fn(*const TaggedClosureRef)>(f: F) {
 }
 
 
-#[repr(C)]
+#[repr(transparent)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Capability (*mut binding::Capability);
 
 impl Capability {
@@ -76,13 +77,13 @@ impl std::ops::DerefMut for Capability {
     }
 }
 
-#[repr(C)]
+#[repr(transparent)]
 pub struct spEntry {
     pub addr : StgPtr
 }
 
 /// An iterator over a linked-list of TSOs (via the `link` field).
-#[repr(C)]
+#[repr(transparent)]
 pub struct TSOIter (*mut StgTSO);
 
 impl Iterator for TSOIter {
