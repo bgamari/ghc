@@ -33,13 +33,12 @@ pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(
 }
 
 /// Helper function to push (standard StgClosure) edge to root packet
-pub fn push_root<Ref: IsClosureRef>(
+pub fn push_root(
     roots: &mut Vec<GHCEdge>,
-    slot: &mut Ref,
+    slot: Slot
 ) 
 {
-    crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
-    roots.push(GHCEdge::from_closure_ref(IsClosureRef::to_tagged_closure_ref(slot)))
+    roots.push(GHCEdge::from_closure_ref(slot))
 }
 
 #[allow(non_snake_case)]

@@ -7,7 +7,8 @@ use crate::stg_closures::*;
 use crate::stg_info_table::*;
 use crate::object_scanning::*;
 use crate::ghc::*;
-use crate::edges::GHCEdge;
+use crate::edges::{GHCEdge, Slot};
+use std::ptr::addr_of_mut;
 
 pub struct VMScanning {}
 
@@ -17,12 +18,12 @@ impl Scanning<GHCVM> for VMScanning {
     fn scan_thread_roots(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<GHCEdge>) {
         let mut roots: Vec<GHCEdge> = vec![];
         for mut cap in iter_capabilities() {
-            push_root(&mut roots, &mut cap.run_queue_hd);
-            push_root(&mut roots, &mut cap.run_queue_tl);
-            push_root(&mut roots, &mut (cap.inbox as *mut Message));
+            push_root(&mut roots, Slot(addr_of_mut!(cap.run_queue_hd) as *mut TaggedClosureRef));
+            push_root(&mut roots, Slot(addr_of_mut!(cap.run_queue_tl) as *mut TaggedClosureRef));
+            push_root(&mut roots, Slot(addr_of_mut!(cap.inbox) as *mut *mut Message as *mut TaggedClosureRef));
             let mut incall = cap.suspended_ccalls;
             while incall != std::ptr::null_mut() {
-                push_root(&mut roots, unsafe { &mut (*incall).suspended_tso });
+                push_root(&mut roots, unsafe { Slot(addr_of_mut!((*incall).suspended_tso) as *mut TaggedClosureRef) });
                 incall = unsafe{ (*incall).next };
             }
         }
