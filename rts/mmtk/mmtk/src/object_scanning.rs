@@ -4,7 +4,7 @@ use mmtk::vm::EdgeVisitor;
 use crate::types::*;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
-use crate::edges::GHCEdge;
+use crate::edges::{GHCEdge, Slot};
 use crate::ghc::*;
 use std::cmp::min;
 use std::mem::size_of;
@@ -28,8 +28,8 @@ pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(
     slot: &mut Ref,
 ) 
 {
-    crate::util::push_node(unsafe{ *IsClosureRef::to_tagged_closure_ref(slot) });
-    ev.visit_edge(GHCEdge::ClosureRef(IsClosureRef::to_tagged_closure_ref(slot)))
+    crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
+    ev.visit_edge(GHCEdge::from_closure_ref(IsClosureRef::to_tagged_closure_ref(slot)))
 }
 
 /// Helper function to push (standard StgClosure) edge to root packet
@@ -38,8 +38,8 @@ pub fn push_root<Ref: IsClosureRef>(
     slot: &mut Ref,
 ) 
 {
-    crate::util::push_node(unsafe{ *IsClosureRef::to_tagged_closure_ref(slot) });
-    roots.push(GHCEdge::ClosureRef(IsClosureRef::to_tagged_closure_ref(slot)))
+    crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
+    roots.push(GHCEdge::from_closure_ref(IsClosureRef::to_tagged_closure_ref(slot)))
 }
 
 #[allow(non_snake_case)]
@@ -315,9 +315,9 @@ pub fn get_stable_ptr_table_roots() -> Vec<GHCEdge>
                 (table.addr >=  __end_ptr as *mut usize)) 
             {
                 let edge_addr: *const *mut usize = &(table.addr) as *const *mut usize;
-                let edge: *mut TaggedClosureRef = edge_addr as *mut TaggedClosureRef;
-                crate::util::push_node(*edge);
-                roots.push(GHCEdge::ClosureRef(edge));
+                let edge: Slot = Slot(edge_addr as *mut TaggedClosureRef);
+                crate::util::push_slot(edge);
+                roots.push(GHCEdge::from_closure_ref(edge));
             }
         }
         roots

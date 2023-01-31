@@ -1,5 +1,5 @@
 use super::types::*;
-use crate::stg_closures::*;
+use crate::edges::Slot;
 
 pub unsafe fn offset_bytes<T>(ptr: *mut T, n: isize) -> *mut T {
     ptr.cast::<u8>().offset(n).cast()
@@ -18,6 +18,6 @@ pub unsafe fn offset_from_end<Src, Target>(ptr: &Src, offset: isize) -> *const T
 
 #[no_mangle]
 #[inline(never)]
-pub fn push_node(_ptr: TaggedClosureRef) {
+pub fn push_slot(_ptr: Slot) {
     ()
 }

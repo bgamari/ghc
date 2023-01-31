@@ -4,10 +4,17 @@ use mmtk::util::constants::LOG_BYTES_IN_ADDRESS;
 use mmtk::util::{Address, ObjectReference};
 use mmtk::vm::edge_shape::{Edge, MemorySlice};
 
+/// A pointer to a pointer to a heap object
+/// i.e. a pointer to a field of a heap object
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct Slot(
+    pub *mut TaggedClosureRef
+);
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GHCEdge {
     /// An edge corresponding to a pointer field of a closure
-    ClosureRef(*mut TaggedClosureRef), // TODO: Use Atomic<...>
+    ClosureRef(Slot), // TODO: Use Atomic<...>
 
     /// An edge corresponding to the SRT of an info table.
     /// Precondition: The info table must have an SRT
@@ -22,12 +29,23 @@ pub enum GHCEdge {
 
 unsafe impl Send for GHCEdge {}
 
+impl GHCEdge {
+    // temporary to assist debugging
+    #[inline(never)]
+    pub fn from_closure_ref(cref: Slot) -> Self {
+        let r = GHCEdge::ClosureRef(cref);
+        assert!(r.load().to_raw_address().as_usize() & 0xffff == 0x0cb0);
+        // assert!(false);
+        r
+    }
+}
+
 impl Edge for GHCEdge {
     fn load(&self) -> ObjectReference {
         match self {
             GHCEdge::ClosureRef(c) => unsafe {
-                let c: *mut TaggedClosureRef = *c;
-                let closure_ref: TaggedClosureRef = *c;         // loads the pointer from the reference field
+                let cref: *mut TaggedClosureRef = c.0;
+                let closure_ref: TaggedClosureRef = *cref;         // loads the pointer from the reference field
                 let addr: Address = closure_ref.to_address();   // untags the pointer
                 ObjectReference::from_raw_address(addr)         // converts it to an mmtk ObjectReference
             },
@@ -39,7 +57,7 @@ impl Edge for GHCEdge {
                         None => panic!("Pushed SrtRef edge for info table without SRT"),
                     }
                 } else {
-                    panic!("PUshed SrtRef edge without info table")
+                    panic!("Pushed SrtRef edge without info table")
                 }
             }
             GHCEdge::RetSrtRef(info_tbl) => unsafe {
@@ -70,7 +88,7 @@ impl Edge for GHCEdge {
     fn store(&self, object: ObjectReference) {
         match self {
             GHCEdge::ClosureRef(c) => unsafe {
-                *(*c) = TaggedClosureRef::from_address(object.to_raw_address());
+                *(c.0) = TaggedClosureRef::from_address(object.to_raw_address());
             },
             GHCEdge::FunSrtRef(_) | GHCEdge::ThunkSrtRef(_) | GHCEdge::RetSrtRef(_) => {
                 panic!("Attempted to store into an SrtRef");

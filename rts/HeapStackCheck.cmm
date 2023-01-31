@@ -119,7 +119,6 @@ stg_gc_noregs
             ret = HeapOverflow;
             goto sched;
         }
-        // need to check again to make sure that 
         if (Capability_context_switch(MyCapability()) != 0 :: CInt ||
             Capability_interrupt(MyCapability())      != 0 :: CInt ||
                 (StgTSO_alloc_limit(CurrentTSO) `lt` (0::I64) &&

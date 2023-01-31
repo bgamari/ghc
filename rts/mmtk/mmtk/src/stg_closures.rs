@@ -3,6 +3,7 @@ use crate::types::*;
 use crate::stg_info_table::*;
 use crate::util::*;
 use crate::ghc::Task;
+use crate::edges::Slot;
 use mmtk::util::{Address, ObjectReference};
 use std::mem::size_of;
 use std::fmt;
@@ -920,22 +921,21 @@ pub struct StgCompactNFData {
 // TODO: test with some typical haskell objects for object scanning
 
 pub trait IsClosureRef {
-    fn to_tagged_closure_ref(ptr: *mut Self) -> *mut TaggedClosureRef {
-        ptr.cast()
-    }
+    fn to_tagged_closure_ref(ptr: *mut Self) -> Slot;
 }
 
 impl IsClosureRef for TaggedClosureRef {
-    fn to_tagged_closure_ref(ptr: *mut TaggedClosureRef) -> *mut TaggedClosureRef {
-        ptr
+    fn to_tagged_closure_ref(ptr: *mut TaggedClosureRef) -> Slot {
+        Slot(ptr)
     }
 }
 
 macro_rules! is_closure {
     ($ty: ident) => {
         impl IsClosureRef for *mut $ty {
-            fn to_tagged_closure_ref(ptr: *mut Self) -> *mut TaggedClosureRef {
-                ptr.cast()
+            // `ptr` is a pointer to a tagged_closure_ref
+            fn to_tagged_closure_ref(ptr: *mut *mut $ty) -> Slot {
+                Slot(ptr.cast())
             }
         }
     }

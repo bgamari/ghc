@@ -474,7 +474,9 @@ run_thread:
     case ThreadRunGHC:
     {
         StgRegTable *r;
+        // call stg c run - start evaluating stg
         r = StgRun((StgFunPtr) stg_returnToStackTop, &cap->r);
+        // return scheduler will return here
         cap = regTableToCapability(r);
         ret = r->rRet;
         break;
