@@ -18,6 +18,7 @@ fn main() {
         .allowlist_type("Task")
         .blocklist_type("StgTSO_")
         .blocklist_type("StgTSO")
+        .derive_debug(true)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
