@@ -29,12 +29,20 @@ import CLOSURE stg_dead_thread_info;
  * to the scheduler marking the thread as finished.
  */
 
+#if defined(MMTK_GHC)
+#define CHECK_SENSIBLE_REGS()                           \
+    ASSERT(HpAlloc == 0);                               \
+    ASSERT(Sp != 0);                                    \
+    ASSERT(SpLim != 0);                                 \
+    ASSERT(SpLim - WDS(RESERVED_STACK_WORDS) <= Sp);
+#else
 #define CHECK_SENSIBLE_REGS()                           \
     ASSERT(Hp != 0);                                    \
     ASSERT(HpAlloc == 0);                               \
     ASSERT(Sp != 0);                                    \
     ASSERT(SpLim != 0);                                 \
     ASSERT(SpLim - WDS(RESERVED_STACK_WORDS) <= Sp);
+#endif
 
 /* -----------------------------------------------------------------------------
    Returning from the STG world.
