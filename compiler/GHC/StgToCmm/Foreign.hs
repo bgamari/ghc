@@ -614,7 +614,7 @@ openNursery profile tscp tso = do
     -- Note [MMTK off-by-one]
     -- ~~~~~~~~~~~~~~~~~~~~~~
     -- The STG machine's Hp register always points to the first byte of the
-    -- *last allocated* word. By contrast, MMTK's BumpAllocator::cursor field
+    -- /last allocated/ word. By contrast, MMTK's BumpAllocator::cursor field
     -- points to the first byte of the first unallocated word. We must take
     -- care to account for this offset when opening/closing the nursery.
     --
@@ -626,19 +626,30 @@ openNursery profile tscp tso = do
       bump_alloc_reg <- CmmLocal <$> newTemp (bWord platform)
       cursor_reg  <- CmmLocal <$> newTemp (bWord platform)
       limit_reg <- CmmLocal <$> newTemp (bWord platform)
-      pure $ catAGraphs [
-          mkAssign bump_alloc_reg (mmtkBumpAllocator platform),
-          mkAssign cursor_reg (cmmLoadBWord platform (bumpAllocator_cursor platform bump_alloc_reg)),
-          mkAssign limit_reg (cmmLoadBWord platform (bumpAllocator_limit platform bump_alloc_reg)),
+      let is_valid_nursery = cmmNeWord platform (CmmReg cursor_reg) (zeroExpr platform)
+      let apply_offset = catAGraphs [
+              -- Hp -= WORD_SIZE
+              mkAssign hpReg $ cmmOffsetW platform (CmmReg hpReg) (-1),
+              -- HpLim -= 1
+              mkAssign hpLimReg $ cmmOffset platform (CmmReg hpLimReg) (-1)
+            ]
 
-          -- Hp = BumpAlloc->cursor - WORD_SIZE
-          mkAssign hpReg $ cmmOffsetW platform (CmmReg cursor_reg) (-1),
+      fixup_code <- mkCmmIfThenUniq tscp is_valid_nursery apply_offset (Just True)
 
-          -- HpLim = BumpAlloc->limit - 1
-          mkAssign hpLimReg (cmmOffset platform (CmmReg limit_reg) (-1))
+      let setup = catAGraphs [
+              mkAssign bump_alloc_reg (mmtkBumpAllocator platform),
+              mkAssign cursor_reg (cmmLoadBWord platform (bumpAllocator_cursor platform bump_alloc_reg)),
+              mkAssign limit_reg (cmmLoadBWord platform (bumpAllocator_limit platform bump_alloc_reg)),
 
-          -- TODO: alloc = bd->free - bd->start
-        ]
+              -- Hp = BumpAlloc->cursor
+              mkAssign hpReg (CmmReg cursor_reg),
+              -- HpLim = BumpAlloc->limit
+              mkAssign hpLimReg (CmmReg limit_reg),
+
+              -- TODO: alloc = bd->free - bd->start
+              fixup_code
+            ]
+      return setup
 
 mmtkBumpAllocator :: Platform -> CmmExpr
 mmtkBumpAllocator platform =

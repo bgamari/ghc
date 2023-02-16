@@ -32,7 +32,7 @@ module GHC.StgToCmm.Monad (
 
         mkCmmIfThenElse, mkCmmIfThen, mkCmmIfGoto,
         mkCmmIfThenElse', mkCmmIfThen', mkCmmIfGoto',
-        mkCmmIfThenElseUniq,
+        mkCmmIfThenElseUniq, mkCmmIfThenUniq,
 
         mkCall, mkCmmCall,
 
@@ -851,10 +851,15 @@ mkCmmIfThen :: CmmExpr -> CmmAGraph -> FCode CmmAGraph
 mkCmmIfThen e tbranch = mkCmmIfThen' e tbranch Nothing
 
 mkCmmIfThen' :: CmmExpr -> CmmAGraph -> Maybe Bool -> FCode CmmAGraph
-mkCmmIfThen' e tbranch l = do
+mkCmmIfThen' e tbranch likely = do
+    tscp <- getTickScope
+    mkCmmIfThenUniq tscp e tbranch likely
+
+mkCmmIfThenUniq :: MonadUnique m => CmmTickScope -> CmmExpr -> CmmAGraph
+                -> Maybe Bool -> m CmmAGraph
+mkCmmIfThenUniq tscp e tbranch l = do
   endif <- newBlockId
   tid   <- newBlockId
-  tscp  <- getTickScope
   return $ catAGraphs [ mkCbranch e tid endif l
                       , mkLabel tid tscp, tbranch, mkLabel endif tscp ]
 

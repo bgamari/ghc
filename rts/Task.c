@@ -256,15 +256,6 @@ newTask (bool worker)
     task->mmutator = mmtk_bind_mutator(task);
     BumpAllocator *bump_alloc = mmtk_get_nursery_allocator(task->mmutator);
     task->mmtk_bump_allocator = bump_alloc;
-
-    // We set the initial cursor and limit of the MMTk BumpAllocator used
-    // by the STG machine such that they are
-    // not NULL since otherwise we will end up with a unsigned integer
-    // underflow due to the offset described in Note [MMTK off-by-one]
-    // in GHC.StgToCmm.Foreign.
-    bump_alloc->cursor = (void*) (2*sizeof(StgWord));
-    bump_alloc->limit = bump_alloc->cursor;
-
     // rts_mutator is used by allocate() and friends.
     task->rts_mutator = mmtk_bind_mutator((void*) ((uintptr_t) task + 1));
 #endif
