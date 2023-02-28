@@ -34,7 +34,7 @@ impl GHCEdge {
     #[inline(never)]
     pub fn from_closure_ref(cref: Slot) -> Self {
         let r = GHCEdge::ClosureRef(cref);
-        // assert!(r.load().to_raw_address().as_usize() & 0xffff == 0x0cb0);
+        crate::util::push_node(r.load());
         r
     }
 }

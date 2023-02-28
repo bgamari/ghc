@@ -255,3 +255,5 @@ fibo
 
 # Heap graph
 *.dot
+my_build.sh
+fibo-ghc

@@ -151,5 +151,6 @@ fn evacuate_static<Q: ObjectQueue> (
 
 pub fn enqueue_roots<Q: ObjectQueue>(queue: &mut Q, object: ObjectReference)
 {
+    crate::util::push_node(object);
     queue.enqueue(object);
 }

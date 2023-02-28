@@ -93,7 +93,7 @@ pub fn scan_PAP_payload<EV: EdgeVisitor<GHCEdge>>(
     match fun_info.f.fun_type {
         ARG_GEN => unsafe {
             let small_bitmap : StgSmallBitmap = fun_info.f.bitmap.small_bitmap;
-            scan_small_bitmap( payload, small_bitmap, ev);
+            scan_small_bitmap( payload, small_bitmap, size, ev);
         }
         ARG_GEN_BIG => unsafe {
             let large_bitmap : &StgLargeBitmap = 
@@ -103,7 +103,7 @@ pub fn scan_PAP_payload<EV: EdgeVisitor<GHCEdge>>(
         // TODO: handle ARG_BCO case
         _ => {
             let small_bitmap = StgFunType::get_small_bitmap(&fun_info.f.fun_type);
-            scan_small_bitmap( payload, small_bitmap, ev);
+            scan_small_bitmap( payload, small_bitmap, size, ev);
         }
     }
 }
@@ -159,10 +159,10 @@ pub fn scan_small_bitmap<EV: EdgeVisitor<GHCEdge>>(
     // _tls: VMWorkerThread,
     payload : &ClosurePayload,
     small_bitmap : StgSmallBitmap,
+    size : usize,
     ev: &mut EV,
 )
 {
-    let size = small_bitmap.size();
     let mut bitmap = small_bitmap.bits();
 
     for i in 0..size {
@@ -221,7 +221,7 @@ pub fn scan_stack<EV: EdgeVisitor<GHCEdge>>(
             }
             RET_SMALL(frame, bitmap) => {
                 let payload : &'static ClosurePayload = &(frame.payload);
-                scan_small_bitmap(payload, bitmap, ev);
+                scan_small_bitmap(payload, bitmap, bitmap.size(), ev);
                 let ret_itbl = unsafe {&mut *(frame.header.info_table.get_mut_ptr())};
                 scan_srt(ret_itbl, ev);
             }
@@ -235,7 +235,7 @@ pub fn scan_stack<EV: EdgeVisitor<GHCEdge>>(
             RET_FUN_SMALL(frame, bitmap) => {
                 visit(ev, &mut frame.fun);
                 let payload : &'static ClosurePayload = &(frame.payload);
-                scan_small_bitmap(payload, bitmap, ev);
+                scan_small_bitmap(payload, bitmap, bitmap.size(), ev);
                 let ret_itbl = unsafe {&mut *(frame.info_table.get_mut_ptr())};
                 scan_srt(ret_itbl, ev);
             }
@@ -263,6 +263,8 @@ pub fn scan_srt<EV: EdgeVisitor<GHCEdge>>(
     match ret_info_table.get_srt() {
         None => (),
         Some(_srt) => {
+            use mmtk::vm::edge_shape::Edge;
+            crate::util::push_node(GHCEdge::RetSrtRef(ret_info_table).load());
             ev.visit_edge(GHCEdge::RetSrtRef(ret_info_table));
         }
     }
@@ -280,6 +282,8 @@ pub fn scan_srt_thunk<EV: EdgeVisitor<GHCEdge>>(
     match thunk_info_table.get_srt() {
         None => (),
         Some(_srt) => {
+            use mmtk::vm::edge_shape::Edge;
+            crate::util::push_node(GHCEdge::ThunkSrtRef(thunk_info_table).load());
             ev.visit_edge(GHCEdge::ThunkSrtRef(thunk_info_table));
         }
     }
@@ -295,6 +299,8 @@ pub fn scan_srt_fun<EV: EdgeVisitor<GHCEdge>>(
     match fun_info_table.get_srt() {
         None => (),
         Some(_srt) => {
+            use mmtk::vm::edge_shape::Edge;
+            crate::util::push_node(GHCEdge::FunSrtRef(fun_info_table).load());
             ev.visit_edge(GHCEdge::FunSrtRef(fun_info_table));
         }
     }

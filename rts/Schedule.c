@@ -1610,7 +1610,6 @@ scheduleDoGC (Capability **pcap, Task *task USED_IF_THREADS,
         StgWord hp_alloc = cap->r.rHpAlloc;
         // N.B. MMTK doesn't like it if we ask for a size-0 allocation.
         if (hp_alloc != 0) {
-            check_gc();
             StgPtr p = mmtk_alloc_slow(task->mmutator, hp_alloc, sizeof(W_), 0, 0);
 
             // N.B. mmtk_alloc_slow may yield our capability by calling block_for_gc;
@@ -1620,7 +1619,6 @@ scheduleDoGC (Capability **pcap, Task *task USED_IF_THREADS,
             // mmtk_alloc_slow has allocated hp_alloc bytes for us but we want
             // the mutator to be the one to advance the cursor; roll it back.
             mmtk_get_nursery_allocator(task->mmutator)->cursor = p;
-            check_gc();
         }
         else {
             // TODO: handle force GC during shutdown (or more cases)

@@ -1,7 +1,7 @@
 use crate::GHCVM;
 use mmtk::util::opaque_pointer::*;
 use mmtk::vm::{EdgeVisitor, Scanning, RootsWorkFactory};
-use mmtk::util::{ObjectReference};
+use mmtk::util::ObjectReference;
 use mmtk::Mutator;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
