@@ -75,7 +75,7 @@ impl ActivePlan<GHCVM> for VMActivePlan {
         object: ObjectReference,
         _worker: &mut GCWorker<GHCVM>,
     ) -> ObjectReference {
-        // Modelled after evacuate_static_object, returns true if this 
+        // Modelled after evacuate_staticobject, returns true if this 
         // is the first time the object has been visited in this GC.
         let mut evacuate_static = |static_link: &mut TaggedClosureRef| -> bool {
             let cur_static_flag = if get_static_flag() { 2 } else { 1 };
@@ -104,11 +104,12 @@ impl ActivePlan<GHCVM> for VMActivePlan {
                 }
             },
             FunStatic(fun) => {
-                let srt =  StgFunInfoTable::from_info_table(info_table).get_srt();
-                let ptrs = unsafe { info_table.layout.payload.ptrs };
+                let info_table = StgFunInfoTable::from_info_table(info_table);
+                let srt = info_table.get_srt();
+                let ptrs = unsafe { info_table.i.layout.payload.ptrs };
                 // if srt != 0 || ptrs != 0
                 if srt.is_some() || (ptrs != 0) {
-                    let offset = unsafe { ptrs + info_table.layout.payload.nptrs };
+                    let offset = unsafe { ptrs + info_table.i.layout.payload.nptrs };
                     let static_link_ref = fun.payload.get_ref(offset as usize);
                     evacuate_static(static_link_ref);
                 }
@@ -132,6 +133,21 @@ impl ActivePlan<GHCVM> for VMActivePlan {
     }
 }
 
+fn evacuate_static<Q: ObjectQueue> (
+    static_link: &mut TaggedClosureRef,
+    queue: &mut Q,
+    object: ObjectReference )
+{
+    let cur_static_flag = if get_static_flag() { 2 } else { 1 };
+    let prev_static_flag = if get_static_flag() { 1 } else { 2 };
+    // TODO: structure this flag bump differently
+    let object_visited: bool = (static_link.get_tag() | prev_static_flag) == 3;
+    if !object_visited {
+        // N.B. We don't need to maintain a list of static objects, therefore ZERO
+        *static_link = TaggedClosureRef::from_address(Address::ZERO).set_tag(cur_static_flag);
+        enqueue_roots(queue, object);
+    }
+}
 
 pub fn enqueue_roots<Q: ObjectQueue>(queue: &mut Q, object: ObjectReference)
 {

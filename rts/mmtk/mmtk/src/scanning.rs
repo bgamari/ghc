@@ -95,6 +95,10 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
             visit(ev, &mut tvar.first_watch_queue_entry);
         }
         Closure::Thunk(thunk) => unsafe {
+            let thunk_itbl = StgThunkInfoTable::from_info_table(itbl);
+            if thunk_itbl.get_srt().is_some() {
+                scan_srt_thunk(thunk_itbl, ev);
+            }
             let n_ptrs : u32 = itbl.layout.payload.ptrs;
             scan_closure_payload(&thunk.payload, n_ptrs, ev);
         }
@@ -103,6 +107,10 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
             scan_closure_payload(&closure.payload, n_ptrs, ev);
         }
         Closure::Fun(fun) => unsafe {
+            let fun_itbl = StgFunInfoTable::from_info_table(itbl);
+            if fun_itbl.get_srt().is_some() {
+                scan_srt_fun(fun_itbl, ev);
+            }
             let n_ptrs = itbl.layout.payload.ptrs;
             scan_closure_payload(&fun.payload, n_ptrs, ev);
         }

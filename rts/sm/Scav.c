@@ -413,7 +413,7 @@ scavenge_thunk_srt(const StgInfoTable *info)
 
     if (!major_gc) return;
 
-    thunk_info = itbl_to_thunk_itbl(info);
+    thunk_info =  (info);  XX
     if (thunk_info->i.srt) {
         StgClosure *srt = (StgClosure*)GET_SRT(thunk_info);
         evacuate(&srt);
