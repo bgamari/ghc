@@ -45,6 +45,14 @@ pub struct ClosurePayload {}
 
 // TODO: check other instances of indexing in payload
 impl ClosurePayload {
+    pub fn get_word(&self, i: usize) -> usize {
+        unsafe {
+            let ptr: *const ClosurePayload = &*self;
+            let payload: *const usize = ptr.cast();
+            *payload.offset(i as isize)
+        }
+    }
+
     pub fn get(&self, i: usize) -> TaggedClosureRef {
         unsafe {
             let ptr: *const ClosurePayload = &*self;

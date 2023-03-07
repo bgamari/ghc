@@ -27,6 +27,10 @@ mod binding {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+const MIN_INTLIKE: i64 = -16;
+const MAX_INTLIKE: i64 = 255;
+const N_INTLIKE_CLOSURES: usize = MAX_INTLIKE - MIN_INTLIKE as usize;
+
 extern "C" {
     pub fn closure_sizeW (p : *const StgClosure) -> u32;
     pub fn upcall_get_mutator(tls: VMMutatorThread) -> *mut Mutator<GHCVM>;
@@ -38,6 +42,22 @@ extern "C" {
     pub static n_capabilities: u32;
     pub static mut global_TSOs: *mut StgTSO;
     pub static mut stable_ptr_table: *mut spEntry;
+    static stg_INTLIKE_closure: [crate::stg_closures::StgIntCharlikeClosure; N_INTLIKE_CLOSURES];
+    static ghczmprim_GHCziTypes_Izh_con_info: *const crate::stg_info_table::StgInfoTable;
+}
+
+/// Is the given closure a small Int-like object? If so, returns Some(c), where c is the
+/// static Int object corresponding to the original object's value.
+pub fn is_intlike_closure(obj: TaggedClosureRef) -> Option<TaggedClosureRef> {
+    if obj.get_info_table() == ghczmprim_GHCziTypes_Izh_con_info
+        && let n = obj.payload.get_word(0)
+        && n >= MIN_INTLIKE
+        && n <= MAX_INTLIKE
+    {
+        Some(TaggedClosureRef::from_ptr(&stg_INTLIKE_closure[n]))
+    } else {
+        None
+    }
 }
 
 pub fn markCapabilities<F: Fn(*const TaggedClosureRef)>(f: F) {

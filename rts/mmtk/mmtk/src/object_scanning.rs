@@ -28,8 +28,13 @@ pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(
     slot: &mut Ref,
 ) 
 {
-    crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
-    ev.visit_edge(GHCEdge::from_closure_ref(IsClosureRef::to_tagged_closure_ref(slot)))
+    let cref = IsClosureRef::to_tagged_closure_ref(slot);
+    if let Some(c) = ghc::is_intlike_closure(cref) {
+        *cref.payload.get_ref(0) = c;
+    } else {
+        crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
+        ev.visit_edge(GHCEdge::from_closure_ref(IsClosureRef::to_tagged_closure_ref(slot)))
+    }
 }
 
 /// Helper function to push (standard StgClosure) edge to root packet
