@@ -203,7 +203,7 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
         },
         // TODO: scavenge_compact for COMPACT_NFDATA
         _ => panic!(
-            "scavenge_one: strange object type={:?}, address={:?}",
+            "scavenge_block: strange object type={:?}, address={:?}",
             itbl.type_, itbl
         ),
     }

@@ -71,7 +71,7 @@ impl ActivePlan<GHCVM> for VMActivePlan {
         object: ObjectReference,
         _worker: &mut GCWorker<GHCVM>,
     ) -> ObjectReference {
-        // Modelled after evacuate_staticobject, returns true if this
+        // Modelled after evacuate_static_object, returns true if this
         // is the first time the object has been visited in this GC.
         let mut evacuate_static = |static_link: &mut TaggedClosureRef| -> bool {
             let cur_static_flag = if get_static_flag() { 2 } else { 1 };
