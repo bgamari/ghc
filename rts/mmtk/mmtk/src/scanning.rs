@@ -1,30 +1,41 @@
-use crate::GHCVM;
-use mmtk::util::opaque_pointer::*;
-use mmtk::vm::{EdgeVisitor, Scanning, RootsWorkFactory};
-use mmtk::util::ObjectReference;
-use mmtk::Mutator;
+use crate::edges::{GHCEdge, Slot};
+use crate::ghc::*;
+use crate::object_scanning::*;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
-use crate::object_scanning::*;
-use crate::ghc::*;
-use crate::edges::{GHCEdge, Slot};
+use crate::GHCVM;
+use mmtk::util::opaque_pointer::*;
+use mmtk::util::ObjectReference;
+use mmtk::vm::{EdgeVisitor, RootsWorkFactory, Scanning};
+use mmtk::Mutator;
 use std::ptr::addr_of_mut;
 
 pub struct VMScanning {}
 
 impl Scanning<GHCVM> for VMScanning {
-
     /// Scan all capabilities' run queues.
     fn scan_thread_roots(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<GHCEdge>) {
         let mut roots: Vec<GHCEdge> = vec![];
         for mut cap in iter_capabilities() {
-            push_root(&mut roots, Slot(addr_of_mut!(cap.run_queue_hd) as *mut TaggedClosureRef));
-            push_root(&mut roots, Slot(addr_of_mut!(cap.run_queue_tl) as *mut TaggedClosureRef));
-            push_root(&mut roots, Slot(addr_of_mut!(cap.inbox) as *mut *mut Message as *mut TaggedClosureRef));
+            push_root(
+                &mut roots,
+                Slot(addr_of_mut!(cap.run_queue_hd) as *mut TaggedClosureRef),
+            );
+            push_root(
+                &mut roots,
+                Slot(addr_of_mut!(cap.run_queue_tl) as *mut TaggedClosureRef),
+            );
+            push_root(
+                &mut roots,
+                Slot(addr_of_mut!(cap.inbox) as *mut *mut Message as *mut TaggedClosureRef),
+            );
             let mut incall = cap.suspended_ccalls;
             while incall != std::ptr::null_mut() {
-                push_root(&mut roots, Slot(unsafe {addr_of_mut!((*incall).suspended_tso) as *mut TaggedClosureRef}));
-                incall = unsafe{ (*incall).next };
+                push_root(
+                    &mut roots,
+                    Slot(unsafe { addr_of_mut!((*incall).suspended_tso) as *mut TaggedClosureRef }),
+                );
+                incall = unsafe { (*incall).next };
             }
         }
         // TODO: traverseSparkQueue
@@ -40,14 +51,11 @@ impl Scanning<GHCVM> for VMScanning {
     }
 
     /// Treate static objects as GC roots
-    fn scan_vm_specific_roots(
-        _tls: VMWorkerThread,
-        mut factory: impl RootsWorkFactory<GHCEdge>,
-    ) {
+    fn scan_vm_specific_roots(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<GHCEdge>) {
         unsafe {
             let mut roots = get_stable_ptr_table_roots();
 
-            let edge = IsClosureRef::to_tagged_closure_ref(&mut global_TSOs);    
+            let edge = IsClosureRef::to_tagged_closure_ref(&mut global_TSOs);
             crate::util::push_slot(edge);
             roots.push(GHCEdge::from_closure_ref(edge));
 
@@ -62,15 +70,12 @@ impl Scanning<GHCVM> for VMScanning {
         _tls: VMWorkerThread,
         obj: ObjectReference,
         ev: &mut EV,
-    )
-    {
-        let closure_ref = TaggedClosureRef::from_object_reference(obj);            
+    ) {
+        let closure_ref = TaggedClosureRef::from_object_reference(obj);
         visit_closure(closure_ref, ev);
     }
 
-
-    fn notify_initial_thread_scan_complete(_partial_scan: bool, _tls: VMWorkerThread) {
-    }
+    fn notify_initial_thread_scan_complete(_partial_scan: bool, _tls: VMWorkerThread) {}
     fn supports_return_barrier() -> bool {
         unimplemented!()
     }
@@ -80,11 +85,11 @@ impl Scanning<GHCVM> for VMScanning {
 }
 
 /// Visit the pointers inside a closure, depending on its closure type
-/// See rts/sm/Scav.c:scavenge_one()
-pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev: &mut EV) {
+/// See rts/sm/Scav.c:scavenge_block()
+pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev: &mut EV) {
     let itbl: &'static StgInfoTable = closure_ref.get_info_table();
 
-    match  closure_ref.to_closure() {
+    match closure_ref.to_closure() {
         Closure::MVar(mvar) => {
             visit(ev, &mut mvar.head);
             visit(ev, &mut mvar.tail);
@@ -99,13 +104,13 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
             if thunk_itbl.get_srt().is_some() {
                 scan_srt_thunk(thunk_itbl, ev);
             }
-            let n_ptrs : u32 = itbl.layout.payload.ptrs;
+            let n_ptrs: u32 = itbl.layout.payload.ptrs;
             scan_closure_payload(&thunk.payload, n_ptrs, ev);
-        }
+        },
         Closure::Constr(closure) => unsafe {
             let n_ptrs = itbl.layout.payload.ptrs;
             scan_closure_payload(&closure.payload, n_ptrs, ev);
-        }
+        },
         Closure::Fun(fun) => unsafe {
             let fun_itbl = StgFunInfoTable::from_info_table(itbl);
             if fun_itbl.get_srt().is_some() {
@@ -113,7 +118,7 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
             }
             let n_ptrs = itbl.layout.payload.ptrs;
             scan_closure_payload(&fun.payload, n_ptrs, ev);
-        }
+        },
         Closure::Weak(weak) => {
             visit(ev, &mut weak.value);
             visit(ev, &mut weak.key);
@@ -135,28 +140,30 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
         Closure::ApStack(ap) => unsafe {
             visit(ev, &mut ap.fun);
             scan_stack(ap.iter(), ev);
-        }
+        },
         Closure::PartialAP(pap) => {
             visit(ev, &mut pap.fun);
-            let size : usize = pap.n_args as usize;
-            let fun_info : & StgFunInfoTable = 
+            let size: usize = pap.n_args as usize;
+            let fun_info: &StgFunInfoTable =
                 StgFunInfoTable::from_info_table(pap.fun.get_info_table());
-            let payload : &ClosurePayload = &pap.payload;
+            let payload: &ClosurePayload = &pap.payload;
             scan_PAP_payload(fun_info, payload, size, ev);
         }
         Closure::AP(ap) => {
             visit(ev, &mut ap.fun);
-            let size : usize = ap.n_args as usize;
-            let fun_info : & StgFunInfoTable = 
+            let size: usize = ap.n_args as usize;
+            let fun_info: &StgFunInfoTable =
                 StgFunInfoTable::from_info_table(ap.fun.get_info_table());
-            let payload : &ClosurePayload = &ap.payload;
+            let payload: &ClosurePayload = &ap.payload;
             scan_PAP_payload(fun_info, payload, size, ev);
         }
         // ARR_WORDS
-        Closure::ArrBytes(_) => { return; }
+        Closure::ArrBytes(_) => {
+            return;
+        }
         Closure::ArrMutPtr(array) => unsafe {
             scan_mut_arr_ptrs(array, ev);
-        }
+        },
         Closure::ArrMutPtrSmall(array) => {
             scan_closure_payload(&array.payload, array.ptrs as u32, ev)
         }
@@ -193,9 +200,11 @@ pub fn visit_closure<EV : EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, e
             scan_srt_fun(fun_info, ev);
             let n_ptrs = itbl.layout.payload.ptrs;
             scan_closure_payload(&fun.payload, n_ptrs, ev);
-        }
+        },
         // TODO: scavenge_compact for COMPACT_NFDATA
-        _ => panic!("scavenge_one: strange object type={:?}, address={:?}", 
-                    itbl.type_, itbl)                
+        _ => panic!(
+            "scavenge_one: strange object type={:?}, address={:?}",
+            itbl.type_, itbl
+        ),
     }
 }

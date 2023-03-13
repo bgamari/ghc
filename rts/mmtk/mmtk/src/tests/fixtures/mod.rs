@@ -1,8 +1,8 @@
 use atomic_refcell::AtomicRefCell;
 use std::sync::Once;
 
+use mmtk::util::{ObjectReference, VMMutatorThread, VMThread};
 use mmtk::AllocationSemantics;
-use mmtk::util::{ObjectReference, VMThread, VMMutatorThread};
 
 use crate::api::*;
 use crate::object_model::OBJECT_REF_OFFSET;

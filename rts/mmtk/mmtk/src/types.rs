@@ -2,7 +2,6 @@
 // use super::stg_closures::*;
 use super::stg_info_table::*;
 
-
 pub type StgWord = usize;
 pub type StgPtr = *mut StgWord;
 
@@ -14,7 +13,6 @@ pub type StgWord16 = u16;
 pub type StgWord8 = u8;
 pub type StgInt = i64;
 pub type StgHalfInt = i32;
-
 
 // ------------ ClosureTypes.h ------------
 #[repr(u32)]
@@ -92,7 +90,7 @@ pub enum StgClosureType {
 
 // ------------ FunTypes.h ------------
 extern "C" {
-    static stg_arg_bitmaps : [usize; 29];
+    static stg_arg_bitmaps: [usize; 29];
 }
 
 // pub struct StgFunType (StgHalfWord);
@@ -147,12 +145,13 @@ impl StgFunType {
  */
 
 #[derive(Eq, Debug)]
-pub struct StgTSONext (StgWord16);
+#[repr(C)]
+pub struct StgTSONext(StgWord16);
 impl StgTSONext {
-    pub const THREAD_RUN_GHC : StgTSONext = StgTSONext(1);       /* return to address on top of stack */
-    pub const THREAD_INTERPRET : StgTSONext = StgTSONext(2);       /* interpret this thread */
-    pub const THREAD_KILLED : StgTSONext = StgTSONext(3);       /* thread has died, don't run it */
-    pub const THREAD_COMPLETE : StgTSONext = StgTSONext(4);       /* thread has finished */
+    pub const THREAD_RUN_GHC: StgTSONext = StgTSONext(1);   /* return to address on top of stack */
+    pub const THREAD_INTERPRET: StgTSONext = StgTSONext(2); /* interpret this thread */
+    pub const THREAD_KILLED: StgTSONext = StgTSONext(3);    /* thread has died, don't run it */
+    pub const THREAD_COMPLETE: StgTSONext = StgTSONext(4);  /* thread has finished */
 }
 
 impl PartialEq for StgTSONext {
@@ -165,26 +164,27 @@ impl PartialEq for StgTSONext {
  * Constants for the why_blocked field of a TSO
  */
 
-#[derive(Eq, Debug)] 
-pub struct StgTSOBlocked (StgWord16);
+#[derive(Eq, Debug)]
+#[repr(C)]
+pub struct StgTSOBlocked(StgWord16);
 impl StgTSOBlocked {
-    pub const NOT_BLOCKED : StgTSOBlocked = StgTSOBlocked(0);
-    pub const BLOCKED_ON_MVAR : StgTSOBlocked = StgTSOBlocked(1);
-    pub const BLOCKED_ON_MVAR_READ : StgTSOBlocked = StgTSOBlocked(14);
-    pub const BLOCKED_ON_BLACK_HOLE : StgTSOBlocked = StgTSOBlocked(2);
-    pub const BLOCKED_ON_READ : StgTSOBlocked = StgTSOBlocked(3);
-    pub const BLOCKED_ON_WRITE : StgTSOBlocked = StgTSOBlocked(4);
-    pub const BLOCKED_ON_DELAY : StgTSOBlocked = StgTSOBlocked(5);
-    pub const BLOCKED_ON_STM : StgTSOBlocked = StgTSOBlocked(6);
+    pub const NOT_BLOCKED: StgTSOBlocked = StgTSOBlocked(0);
+    pub const BLOCKED_ON_MVAR: StgTSOBlocked = StgTSOBlocked(1);
+    pub const BLOCKED_ON_MVAR_READ: StgTSOBlocked = StgTSOBlocked(14);
+    pub const BLOCKED_ON_BLACK_HOLE: StgTSOBlocked = StgTSOBlocked(2);
+    pub const BLOCKED_ON_READ: StgTSOBlocked = StgTSOBlocked(3);
+    pub const BLOCKED_ON_WRITE: StgTSOBlocked = StgTSOBlocked(4);
+    pub const BLOCKED_ON_DELAY: StgTSOBlocked = StgTSOBlocked(5);
+    pub const BLOCKED_ON_STM: StgTSOBlocked = StgTSOBlocked(6);
 
     /* Win32 only: */
-    pub const BLOCKED_ON_DO_PROC : StgTSOBlocked = StgTSOBlocked(7);
+    pub const BLOCKED_ON_DO_PROC: StgTSOBlocked = StgTSOBlocked(7);
     /* Only relevant for THREADED_RTS: */
-    pub const BLOCKED_ON_CCALL : StgTSOBlocked = StgTSOBlocked(10);
-    pub const BLOCKED_ON_CCALL_INTERRUPTIBLE : StgTSOBlocked = StgTSOBlocked(11);
+    pub const BLOCKED_ON_CCALL: StgTSOBlocked = StgTSOBlocked(10);
+    pub const BLOCKED_ON_CCALL_INTERRUPTIBLE: StgTSOBlocked = StgTSOBlocked(11);
 
-    pub const BLOCKED_ON_MSG_THROW_TO : StgTSOBlocked = StgTSOBlocked(12);
-    pub const THREAD_MIGRATING : StgTSOBlocked = StgTSOBlocked(13);
+    pub const BLOCKED_ON_MSG_THROW_TO: StgTSOBlocked = StgTSOBlocked(12);
+    pub const THREAD_MIGRATING: StgTSOBlocked = StgTSOBlocked(13);
 }
 
 impl PartialEq for StgTSOBlocked {
@@ -197,17 +197,18 @@ impl PartialEq for StgTSOBlocked {
  * Flags for the tso->flags field.
  */
 
-#[derive(Eq, Debug)] 
-pub struct StgTSOFlag (StgWord32);
+#[derive(Eq, Debug)]
+#[repr(C)]
+pub struct StgTSOFlag(StgWord32);
 
 impl StgTSOFlag {
-    pub const TSO_LOCKED : StgTSOFlag = StgTSOFlag(2);
-    pub const TSO_BLOCKEX : StgTSOFlag = StgTSOFlag(4);
-    pub const TSO_INTERRUPTIBLE : StgTSOFlag = StgTSOFlag(8);
-    pub const TSO_STOPPED_ON_BREAKPOINT : StgTSOFlag = StgTSOFlag(16);
-    pub const TSO_MARKED : StgTSOFlag = StgTSOFlag(64);
-    pub const TSO_SQUEEZED : StgTSOFlag = StgTSOFlag(128);
-    pub const TSO_ALLOC_LIMIT : StgTSOFlag = StgTSOFlag(256);
+    pub const TSO_LOCKED: StgTSOFlag = StgTSOFlag(2);
+    pub const TSO_BLOCKEX: StgTSOFlag = StgTSOFlag(4);
+    pub const TSO_INTERRUPTIBLE: StgTSOFlag = StgTSOFlag(8);
+    pub const TSO_STOPPED_ON_BREAKPOINT: StgTSOFlag = StgTSOFlag(16);
+    pub const TSO_MARKED: StgTSOFlag = StgTSOFlag(64);
+    pub const TSO_SQUEEZED: StgTSOFlag = StgTSOFlag(128);
+    pub const TSO_ALLOC_LIMIT: StgTSOFlag = StgTSOFlag(256);
 }
 
 impl PartialEq for StgTSOFlag {

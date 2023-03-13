@@ -1,14 +1,13 @@
-use mmtk::vm::{EdgeVisitor};
-use crate::stg_closures::*;
-use crate::scanning::*;
-use crate::types::*;
 use crate::edges::GHCEdge;
-
+use crate::scanning::*;
+use crate::stg_closures::*;
+use crate::types::*;
+use mmtk::vm::EdgeVisitor;
 
 use std::vec::*;
 
 #[no_mangle]
-pub unsafe extern "C" fn print_obj(obj : TaggedClosureRef){  
+pub unsafe extern "C" fn print_obj(obj: TaggedClosureRef) {
     let closure = Closure::from_ptr(obj.to_ptr());
     println!("obj in address {:?}:", obj.to_ptr());
     println!("{:?}", closure);
@@ -16,7 +15,7 @@ pub unsafe extern "C" fn print_obj(obj : TaggedClosureRef){
     // TODO: not working
     // match closure {
     //     Closure::Constr(_) => {
-    //         println!("closure={:?}, {:?}", closure, 
+    //         println!("closure={:?}, {:?}", closure,
     //                 StgConInfoTable::from_info_table(obj.get_info_table()).con_desc());
     //     }
     //     _ => {
@@ -26,7 +25,7 @@ pub unsafe extern "C" fn print_obj(obj : TaggedClosureRef){
 }
 
 struct CollectPointerVisitor {
-    pub pointers : Vec<TaggedClosureRef>,   
+    pub pointers: Vec<TaggedClosureRef>,
 }
 
 impl EdgeVisitor<GHCEdge> for CollectPointerVisitor {
@@ -38,11 +37,13 @@ impl EdgeVisitor<GHCEdge> for CollectPointerVisitor {
 
 impl CollectPointerVisitor {
     fn new() -> Self {
-        CollectPointerVisitor{pointers : Vec::new()}
+        CollectPointerVisitor {
+            pointers: Vec::new(),
+        }
     }
 }
 
-
+#[allow(improper_ctypes)]
 extern "C" {
     fn heap_view_closureSize(closure: *const StgClosure) -> usize;
     fn collect_pointers(closure: *const StgClosure, pointers: *mut *const StgClosure) -> usize;
@@ -50,7 +51,7 @@ extern "C" {
 
 #[no_mangle]
 /*
-pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) { 
+pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) {
     // keep a common set to iterate through all closures
     // recursively visit visitor.pointers
     // 1. set of obj to visit
@@ -79,7 +80,7 @@ pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) {
     let mut visited_c = Vec::new();
     let mut to_visit_c = Vec::new();
     to_visit_c.push(obj.to_ptr());
-    
+
     while !to_visit_c.is_empty() {
         let mut x = to_visit_c.pop().expect("visitor empty but still poping element...");
         x = TaggedClosureRef::from_ptr(x as *mut StgClosure).to_ptr();
@@ -103,22 +104,24 @@ pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) {
         // print_obj(i);
         // print_obj(TaggedClosureRef::from_ptr(j as *mut StgClosure));
         // println!();
-        assert_eq!(i.to_ptr(), TaggedClosureRef::from_ptr(j as *mut StgClosure).to_ptr(), 
+        assert_eq!(i.to_ptr(), TaggedClosureRef::from_ptr(j as *mut StgClosure).to_ptr(),
         "Pointers not equal to each other {:?}, {:?}", i, j);
     }
 }
 */
 
-pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) { 
-    let mut visited : Vec<TaggedClosureRef> = Vec::new();
-    let mut to_visit : Vec<TaggedClosureRef> = Vec::new();
-    
+pub unsafe extern "C" fn rs_collect_pointers(obj: TaggedClosureRef) {
+    let mut visited: Vec<TaggedClosureRef> = Vec::new();
+    let mut to_visit: Vec<TaggedClosureRef> = Vec::new();
+
     // let mut visited_c : Vec<*const StgClosure> = Vec::new();
     // let mut to_visit_c : Vec<*const StgClosure> = Vec::new();
 
     to_visit.push(obj);
     while !to_visit.is_empty() {
-        let x = to_visit.pop().expect("visitor empty but still poping element...");
+        let x = to_visit
+            .pop()
+            .expect("visitor empty but still poping element...");
         if visited.contains(&x) {
             continue;
         }
@@ -132,14 +135,19 @@ pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) {
 
         // visit with C implementation
         // let x_ptr = TaggedClosureRef::from_ptr(x as *mut StgClosure).to_ptr();
-        let mut c_ptrs : Vec<*const StgClosure> = Vec::with_capacity(heap_view_closureSize(x.to_ptr()));
+        let mut c_ptrs: Vec<*const StgClosure> =
+            Vec::with_capacity(heap_view_closureSize(x.to_ptr()));
         let _n = collect_pointers(x.to_ptr(), c_ptrs.as_mut_ptr());
         c_ptrs.set_len(_n); // update the length of the vector after visiting
 
         rust_ptrs.sort();
-        let rust_ptrs_new : Vec<*const StgClosure> = rust_ptrs.iter().map(|x| x.to_tagged_ptr()).collect();
+        let rust_ptrs_new: Vec<*const StgClosure> =
+            rust_ptrs.iter().map(|x| x.to_tagged_ptr()).collect();
         c_ptrs.sort();
-        let c_ptrs_new : Vec<*const StgClosure> = c_ptrs.iter().map(|x| TaggedClosureRef::from_ptr(*x as *mut StgClosure).to_ptr()).collect();
+        let c_ptrs_new: Vec<*const StgClosure> = c_ptrs
+            .iter()
+            .map(|x| TaggedClosureRef::from_ptr(*x as *mut StgClosure).to_ptr())
+            .collect();
 
         // TODO: have a white list to skip some closure types
         // 1. stack
@@ -147,21 +155,24 @@ pub unsafe extern "C" fn rs_collect_pointers(obj : TaggedClosureRef) {
             StgClosureType::STACK | StgClosureType::TVAR => {
                 continue;
             }
-            _ => ()
+            _ => (),
         }
-        
+
         // check that results match
         // assert_eq!(rust_ptrs.len(), c_ptrs.len(), "Two vector not the same length");
-        assert_eq!(rust_ptrs_new, c_ptrs_new, "Rust pointers and C pointers not matching");
+        assert_eq!(
+            rust_ptrs_new, c_ptrs_new,
+            "Rust pointers and C pointers not matching"
+        );
 
         // for (i, j) in rust_ptrs.iter().zip(c_ptrs.into_iter()) { // into_iter will consume the array; iter gives a reference of elements
         //     // print_obj(i);
         //     // print_obj(TaggedClosureRef::from_ptr(j as *mut StgClosure));
         //     // println!();
-        //     assert_eq!(i.to_ptr(), TaggedClosureRef::from_ptr(j as *mut StgClosure).to_ptr(), 
+        //     assert_eq!(i.to_ptr(), TaggedClosureRef::from_ptr(j as *mut StgClosure).to_ptr(),
         //     "Pointers not equal to each other {:?}, {:?}", i, j);
         // }
-        
+
         visited.push(x);
         to_visit.append(&mut rust_ptrs);
     }

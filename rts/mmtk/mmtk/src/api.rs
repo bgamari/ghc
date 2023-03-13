@@ -1,25 +1,31 @@
 // All functions here are extern function. There is no point for marking them as unsafe.
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
-use libc::c_char;
-use std::sync::atomic::Ordering;
-use std::ffi::CStr;
-use mmtk::memory_manager;
-use mmtk::AllocationSemantics;
-use mmtk::util::{ObjectReference, Address};
-use mmtk::util::opaque_pointer::*;
-use mmtk::scheduler::{GCController, GCWorker};
-use mmtk::Mutator;
+use crate::BUILDER;
 use crate::GHCVM;
 use crate::SINGLETON;
-use crate::BUILDER;
+use libc::c_char;
+use mmtk::memory_manager;
+use mmtk::scheduler::{GCController, GCWorker};
+use mmtk::util::opaque_pointer::*;
+use mmtk::util::{Address, ObjectReference};
+use mmtk::AllocationSemantics;
+use mmtk::Mutator;
+use std::ffi::CStr;
+use std::sync::atomic::Ordering;
 
 #[no_mangle]
 pub extern "C" fn mmtk_init(heap_size: usize) {
     // set heap size first
     {
         let mut builder = BUILDER.lock().unwrap();
-        let success = builder.options.gc_trigger.set(mmtk::util::options::GCTriggerSelector::FixedHeapSize(heap_size));
+        let success =
+            builder
+                .options
+                .gc_trigger
+                .set(mmtk::util::options::GCTriggerSelector::FixedHeapSize(
+                    heap_size,
+                ));
         assert!(success, "Failed to set heap size to {}", heap_size);
     }
 
@@ -43,7 +49,9 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut Mutator<GHCVM>) {
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_get_nursery_allocator(mutator: *mut Mutator<GHCVM>) -> *mut mmtk::util::alloc::ImmixAllocator<GHCVM> {
+pub extern "C" fn mmtk_get_nursery_allocator(
+    mutator: *mut Mutator<GHCVM>,
+) -> *mut mmtk::util::alloc::ImmixAllocator<GHCVM> {
     let mutator = unsafe { &mut *mutator };
     let selector = memory_manager::get_allocator_mapping(&SINGLETON, AllocationSemantics::Default);
     let allocator = unsafe { mutator.allocators.get_allocator_mut(selector) };
@@ -51,17 +59,31 @@ pub extern "C" fn mmtk_get_nursery_allocator(mutator: *mut Mutator<GHCVM>) -> *m
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_alloc(mutator: *mut Mutator<GHCVM>, size: usize,
-                    align: usize, offset: isize, mut semantics: AllocationSemantics) -> Address {
-    if size >= SINGLETON.get_plan().constraints().max_non_los_default_alloc_bytes {
+pub extern "C" fn mmtk_alloc(
+    mutator: *mut Mutator<GHCVM>,
+    size: usize,
+    align: usize,
+    offset: isize,
+    mut semantics: AllocationSemantics,
+) -> Address {
+    if size
+        >= SINGLETON
+            .get_plan()
+            .constraints()
+            .max_non_los_default_alloc_bytes
+    {
         semantics = AllocationSemantics::Los;
     }
     memory_manager::alloc::<GHCVM>(unsafe { &mut *mutator }, size, align, offset, semantics)
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_alloc_slow(mutator: *mut Mutator<GHCVM>, size: usize,
-                    align: usize, offset: isize) -> Address {
+pub extern "C" fn mmtk_alloc_slow(
+    mutator: *mut Mutator<GHCVM>,
+    size: usize,
+    align: usize,
+    offset: isize,
+) -> Address {
     let mutator = unsafe { &mut *mutator };
     let selector = memory_manager::get_allocator_mapping(&SINGLETON, AllocationSemantics::Default);
     let allocator = unsafe { mutator.allocators.get_allocator_mut(selector) };
@@ -69,9 +91,18 @@ pub extern "C" fn mmtk_alloc_slow(mutator: *mut Mutator<GHCVM>, size: usize,
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_post_alloc(mutator: *mut Mutator<GHCVM>, refer: ObjectReference,
-                                        bytes: usize, mut semantics: AllocationSemantics) {
-    if bytes >= SINGLETON.get_plan().constraints().max_non_los_default_alloc_bytes {
+pub extern "C" fn mmtk_post_alloc(
+    mutator: *mut Mutator<GHCVM>,
+    refer: ObjectReference,
+    bytes: usize,
+    mut semantics: AllocationSemantics,
+) {
+    if bytes
+        >= SINGLETON
+            .get_plan()
+            .constraints()
+            .max_non_los_default_alloc_bytes
+    {
         semantics = AllocationSemantics::Los;
     }
     memory_manager::post_alloc::<GHCVM>(unsafe { &mut *mutator }, refer, bytes, semantics)
@@ -83,7 +114,10 @@ pub extern "C" fn mmtk_will_never_move(object: ObjectReference) -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_start_control_collector(tls: VMWorkerThread, controller: &'static mut GCController<GHCVM>) {
+pub extern "C" fn mmtk_start_control_collector(
+    tls: VMWorkerThread,
+    controller: &'static mut GCController<GHCVM>,
+) {
     memory_manager::start_control_collector(&SINGLETON, tls, controller);
 }
 
@@ -123,7 +157,7 @@ pub extern "C" fn mmtk_total_bytes() -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn mmtk_is_live_object(object: ObjectReference) -> bool{
+pub extern "C" fn mmtk_is_live_object(object: ObjectReference) -> bool {
     memory_manager::is_live_object(object)
 }
 
@@ -183,7 +217,11 @@ pub extern "C" fn mmtk_process(name: *const c_char, value: *const c_char) -> boo
     let name_str: &CStr = unsafe { CStr::from_ptr(name) };
     let value_str: &CStr = unsafe { CStr::from_ptr(value) };
     let mut builder = BUILDER.lock().unwrap();
-    memory_manager::process(&mut builder, name_str.to_str().unwrap(), value_str.to_str().unwrap())
+    memory_manager::process(
+        &mut builder,
+        name_str.to_str().unwrap(),
+        value_str.to_str().unwrap(),
+    )
 }
 
 #[no_mangle]
@@ -218,7 +256,11 @@ pub extern "C" fn mmtk_calloc(num: usize, size: usize) -> Address {
 
 #[no_mangle]
 #[cfg(feature = "malloc_counted_size")]
-pub extern "C" fn mmtk_realloc_with_old_size(addr: Address, size: usize, old_size: usize) -> Address {
+pub extern "C" fn mmtk_realloc_with_old_size(
+    addr: Address,
+    size: usize,
+    old_size: usize,
+) -> Address {
     memory_manager::realloc_with_old_size::<GHCVM>(&SINGLETON, addr, size, old_size)
 }
 #[no_mangle]

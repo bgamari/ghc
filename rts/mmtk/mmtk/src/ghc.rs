@@ -1,8 +1,8 @@
+use crate::stg_closures::{StgClosure, StgTSO, TaggedClosureRef};
+use crate::types::{StgPtr, StgWord16};
+use crate::GHCVM;
 use mmtk::util::opaque_pointer::*;
 use mmtk::Mutator;
-use crate::GHCVM;
-use crate::types::{StgPtr, StgWord16};
-use crate::stg_closures::{StgTSO, TaggedClosureRef, StgClosure};
 
 pub use binding::Task;
 
@@ -11,8 +11,9 @@ mod binding {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
     #![allow(non_snake_case)]
+    #![allow(improper_ctypes)]
 
-    use crate::stg_closures::{TaggedClosureRef, StgTSO};
+    use crate::stg_closures::{StgTSO, TaggedClosureRef};
     use libc::c_void;
 
     type StgTSO_ = StgTSO;
@@ -20,18 +21,19 @@ mod binding {
     extern "C" {
         pub fn markCapabilities(
             f: unsafe extern "C" fn(*const c_void, *const TaggedClosureRef) -> (),
-            ctx: *const c_void
+            ctx: *const c_void,
         );
     }
 
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+#[allow(improper_ctypes)]
 extern "C" {
-    pub fn closure_sizeW (p : *const StgClosure) -> u32;
+    pub fn closure_sizeW(p: *const StgClosure) -> u32;
     pub fn upcall_get_mutator(tls: VMMutatorThread) -> *mut Mutator<GHCVM>;
     pub fn upcall_is_task(tls: VMThread) -> bool;
-    pub static closure_flags : *const StgWord16;
+    pub static closure_flags: *const StgWord16;
     pub static all_tasks: *const Task;
     pub static SPT_size: u32;
     pub static stg_END_TSO_QUEUE_closure: StgTSO;
@@ -40,11 +42,12 @@ extern "C" {
     pub static mut stable_ptr_table: *mut spEntry;
 }
 
-pub fn markCapabilities<F: Fn(*const TaggedClosureRef)>(f: F) {
+#[allow(dead_code)]
+pub fn mark_capabilities<F: Fn(*const TaggedClosureRef)>(f: F) {
     use libc::c_void;
     unsafe extern "C" fn wrapper<F: Fn(*const TaggedClosureRef)>(
         ctx: *const c_void,
-        value: *const TaggedClosureRef
+        value: *const TaggedClosureRef,
     ) {
         (*(ctx as *const F))(value);
     }
@@ -53,11 +56,11 @@ pub fn markCapabilities<F: Fn(*const TaggedClosureRef)>(f: F) {
     }
 }
 
-
 #[repr(C)]
-pub struct Capability (*mut binding::Capability);
+pub struct Capability(*mut binding::Capability);
 
 impl Capability {
+    #[allow(dead_code)]
     pub fn iter_run_queue(&self) -> TSOIter {
         TSOIter(self.run_queue_hd)
     }
@@ -78,12 +81,12 @@ impl std::ops::DerefMut for Capability {
 
 #[repr(C)]
 pub struct spEntry {
-    pub addr : StgPtr
+    pub addr: StgPtr,
 }
 
 /// An iterator over a linked-list of TSOs (via the `link` field).
 #[repr(C)]
-pub struct TSOIter (*mut StgTSO);
+pub struct TSOIter(*mut StgTSO);
 
 impl Iterator for TSOIter {
     type Item = &'static mut StgTSO;
@@ -103,17 +106,17 @@ impl Iterator for TSOIter {
 
 /// This must only be used during a stop-the-world period, when the capability count is known to be
 /// fixed.
-pub fn iter_capabilities() -> impl Iterator<Item=Capability> {
+pub fn iter_capabilities() -> impl Iterator<Item = Capability> {
     unsafe {
-        binding::capabilities.iter()
+        binding::capabilities
+            .iter()
             .take(binding::n_capabilities.try_into().unwrap())
             .map(|x| Capability(*x))
     }
 }
 
-
 // TODO: need to consider when table is enlarged
-pub fn iter_stable_ptr_table() -> impl Iterator<Item=&'static spEntry> {
+pub fn iter_stable_ptr_table() -> impl Iterator<Item = &'static spEntry> {
     unsafe {
         let tables: &[spEntry] = std::slice::from_raw_parts(stable_ptr_table, SPT_size as usize);
         tables.iter().map(|x| &*x)
@@ -121,7 +124,7 @@ pub fn iter_stable_ptr_table() -> impl Iterator<Item=&'static spEntry> {
 }
 
 pub fn vm_mutator_thread_to_task(mutator: mmtk::util::VMMutatorThread) -> *const Task {
-    let optr: mmtk::util::opaque_pointer::OpaquePointer = mutator.0.0;
+    let optr: mmtk::util::opaque_pointer::OpaquePointer = mutator.0 .0;
     // TODO: mmtk should allow unsafe inspection of OpaquePointer's payload
     unsafe { std::mem::transmute(optr) }
 }

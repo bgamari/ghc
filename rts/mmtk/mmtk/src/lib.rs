@@ -1,26 +1,26 @@
-extern crate mmtk;
 extern crate libc;
+extern crate mmtk;
 #[macro_use]
 extern crate lazy_static;
 
 use mmtk::vm::VMBinding;
-use mmtk::MMTK;
 use mmtk::MMTKBuilder;
+use mmtk::MMTK;
 
-mod ghc;
-pub mod scanning;
-pub mod object_scanning;
-pub mod collection;
-pub mod object_model;
 pub mod active_plan;
-pub mod reference_glue;
 pub mod api;
-pub mod types;
+pub mod collection;
+pub mod edges;
+mod ghc;
+pub mod object_model;
+pub mod object_scanning;
+pub mod reference_glue;
+pub mod scanning;
 pub mod stg_closures;
 pub mod stg_info_table;
-pub mod util;
 pub mod test;
-pub mod edges;
+pub mod types;
+pub mod util;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +36,6 @@ impl VMBinding for GHCVM {
     type VMReferenceGlue = reference_glue::VMReferenceGlue;
     type VMEdge = edges::GHCEdge;
     type VMMemorySlice = edges::GHCVMMemorySlice;
-
 
     /// Allowed maximum alignment in bytes.
     const MAX_ALIGNMENT: usize = 1 << 6;

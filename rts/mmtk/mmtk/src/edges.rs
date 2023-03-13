@@ -7,9 +7,7 @@ use mmtk::vm::edge_shape::{Edge, MemorySlice};
 /// A pointer to a pointer to a heap object
 /// i.e. a pointer to a field of a heap object
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub struct Slot(
-    pub *mut TaggedClosureRef
-);
+pub struct Slot(pub *mut TaggedClosureRef);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GHCEdge {
@@ -44,9 +42,9 @@ impl Edge for GHCEdge {
         match self {
             GHCEdge::ClosureRef(c) => unsafe {
                 let cref: *mut TaggedClosureRef = c.0;
-                let closure_ref: TaggedClosureRef = *cref;         // loads the pointer from the reference field
-                let addr: Address = closure_ref.to_address();   // untags the pointer
-                ObjectReference::from_raw_address(addr)         // converts it to an mmtk ObjectReference
+                let closure_ref: TaggedClosureRef = *cref; // loads the pointer from the reference field
+                let addr: Address = closure_ref.to_address(); // untags the pointer
+                ObjectReference::from_raw_address(addr) // converts it to an mmtk ObjectReference
             },
             GHCEdge::ThunkSrtRef(info_tbl) => unsafe {
                 let some_table = <*mut StgThunkInfoTable>::as_ref(*info_tbl);
@@ -58,7 +56,7 @@ impl Edge for GHCEdge {
                 } else {
                     panic!("Pushed SrtRef edge without info table")
                 }
-            }
+            },
             GHCEdge::RetSrtRef(info_tbl) => unsafe {
                 let some_table = <*mut StgRetInfoTable>::as_ref(*info_tbl);
                 if let Some(table) = some_table {
@@ -69,7 +67,7 @@ impl Edge for GHCEdge {
                 } else {
                     panic!("PUshed SrtRef edge without info table")
                 }
-            }
+            },
             GHCEdge::FunSrtRef(info_tbl) => unsafe {
                 let some_table = <*mut StgFunInfoTable>::as_ref(*info_tbl);
                 if let Some(table) = some_table {
@@ -80,7 +78,7 @@ impl Edge for GHCEdge {
                 } else {
                     panic!("PUshed SrtRef edge without info table")
                 }
-            }
+            },
         }
     }
 
@@ -95,7 +93,6 @@ impl Edge for GHCEdge {
         }
     }
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GHCVMMemorySlice(*mut [ObjectReference]);
