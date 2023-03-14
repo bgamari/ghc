@@ -3,6 +3,9 @@ use crate::ghc::*;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
 use crate::types::*;
+use crate::stg_closures::IsClosureRef;
+use crate::util::{push_root, push_slot};
+use crate::types::StgClosureType::{CONSTR_0_1, BLACKHOLE};
 use mmtk::vm::EdgeVisitor;
 use std::cmp::min;
 use std::mem::size_of;
@@ -21,16 +24,72 @@ pub fn scan_closure_payload<EV: EdgeVisitor<GHCEdge>>(
 
 /// Helper function to visit (standard StgClosure) edge
 pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(ev: &mut EV, slot: &mut Ref) {
-    crate::util::push_slot(IsClosureRef::to_tagged_closure_ref(slot));
-    ev.visit_edge(GHCEdge::from_closure_ref(
-        IsClosureRef::to_tagged_closure_ref(slot),
-    ))
+    let s: Slot = IsClosureRef::to_tagged_closure_ref(slot);
+
+    #[cfg(feature = "indirection_shortcutting")]
+    let closure_ref = indirection_shortcutting(s);
+    #[cfg(not(feature = "indirection_shortcutting"))]
+    let closure_ref = s.get();
+
+    let itbl = closure_ref.get_info_table();
+    if itbl.type_ == CONSTR_0_1 {
+        #[cfg(feature = "small_obj_optimisation")]
+        if small_obj_optimisation(closure_ref) { return }
+    }
+
+    #[cfg(feature = "mmtk_ghc_debug")]
+    push_slot(s);
+
+    ev.visit_edge(GHCEdge::from_closure_ref(s));
 }
 
-/// Helper function to push (standard StgClosure) edge to root packet
-pub fn push_root(roots: &mut Vec<GHCEdge>, slot: Slot) {
-    crate::util::push_slot(slot);
-    roots.push(GHCEdge::from_closure_ref(slot))
+/// Given a slot, we return the final indirectee of the chain
+/// We update the slot to point to the final indirectee (Evac.c:938)
+#[cfg(feature = "indirection_shortcutting")]
+fn indirection_shortcutting(mut slot: Slot) -> TaggedClosureRef {
+    let mut closure_ref: TaggedClosureRef = slot.get();
+
+    loop {
+        let itbl = closure_ref.get_info_table();
+
+        // check if p is a blackhole, if so, we can try update it to its indirectee
+        if itbl.type_ == BLACKHOLE {
+            let indir: TaggedClosureRef = unsafe { (*(closure_ref.to_ptr() as *const StgInd)).indirectee };
+            // if tag is zero, then we have to further check whether if indir is a blackhole
+            let is_indirection: bool = if indir.get_tag() != 0 { true } else {
+                let r_itbl = indir.get_info_table() as *const StgInfoTable;
+                // if infotable of indir is one of these types, it means that indir is a blackhole,
+                // so p does not have a updated value yet, end of the chain
+                let is_blackhole = r_itbl == unsafe {stg_TSO_info} ||
+                                r_itbl == unsafe {stg_WHITEHOLE_info} || 
+                                r_itbl == unsafe {stg_BLOCKING_QUEUE_CLEAN_info} ||
+                                r_itbl == unsafe {stg_BLOCKING_QUEUE_DIRTY_info};
+                is_blackhole
+            };
+            if is_indirection {
+                slot.set(indir);
+                closure_ref = indir;
+                continue;
+            }
+        }
+        break;
+    }
+    closure_ref
+}
+
+/// Return true if optimisation is applied
+/// Otherwise return false, in this case we need to enqueue the edge
+#[cfg(feature = "small_obj_optimisation")]
+fn small_obj_optimisation(closure_ref: TaggedClosureRef) -> bool {
+    if let Some(c) = is_intlike_closure(closure_ref) {
+        *closure_ref.get_payload_ref(0) = c;
+        return true;
+    } 
+    else if let Some(c) = is_charlike_closure(closure_ref) {
+        *closure_ref.get_payload_ref(0) = c;
+        return true;
+    }
+    false
 }
 
 #[allow(non_snake_case)]
@@ -197,7 +256,6 @@ pub fn scan_stack<EV: EdgeVisitor<GHCEdge>>(stack: StackIterator, ev: &mut EV) {
         use StackFrame::*;
         match stackframe {
             UPD_FRAME(frame) => {
-                // evacuate_BLACKHOLE
                 visit(ev, &mut frame.updatee);
             }
             RET_SMALL(frame, bitmap) => {
@@ -228,7 +286,7 @@ pub fn scan_stack<EV: EdgeVisitor<GHCEdge>>(stack: StackIterator, ev: &mut EV) {
                 let ret_itbl = unsafe { &mut *(frame.info_table.get_mut_ptr()) };
                 scan_srt(ret_itbl, ev);
             }
-            _ => panic!("Unexpected stackframe type {:?}", stackframe),
+            _ => panic!("Unexpected stackframe type {stackframe:?}"),
         }
     }
 }
@@ -240,8 +298,12 @@ pub fn scan_srt<EV: EdgeVisitor<GHCEdge>>(ret_info_table: &mut StgRetInfoTable, 
     match ret_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-            use mmtk::vm::edge_shape::Edge;
-            crate::util::push_node(GHCEdge::RetSrtRef(ret_info_table).load());
+
+            #[cfg(feature = "mmtk_ghc_debug")]
+            crate::util::push_node(
+                mmtk::vm::edge_shape::Edge::load(
+                    &GHCEdge::RetSrtRef(ret_info_table)));
+
             ev.visit_edge(GHCEdge::RetSrtRef(ret_info_table));
         }
     }
@@ -258,8 +320,12 @@ pub fn scan_srt_thunk<EV: EdgeVisitor<GHCEdge>>(
     match thunk_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-            use mmtk::vm::edge_shape::Edge;
-            crate::util::push_node(GHCEdge::ThunkSrtRef(thunk_info_table).load());
+
+            #[cfg(feature = "mmtk_ghc_debug")]
+            crate::util::push_node(
+                mmtk::vm::edge_shape::Edge::load(
+                    &GHCEdge::ThunkSrtRef(thunk_info_table)));
+
             ev.visit_edge(GHCEdge::ThunkSrtRef(thunk_info_table));
         }
     }
@@ -271,8 +337,12 @@ pub fn scan_srt_fun<EV: EdgeVisitor<GHCEdge>>(fun_info_table: &mut StgFunInfoTab
     match fun_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-            use mmtk::vm::edge_shape::Edge;
-            crate::util::push_node(GHCEdge::FunSrtRef(fun_info_table).load());
+
+            #[cfg(feature = "mmtk_ghc_debug")]
+            crate::util::push_node(
+                mmtk::vm::edge_shape::Edge::load(
+                    &GHCEdge::FunSrtRef(fun_info_table)));
+
             ev.visit_edge(GHCEdge::FunSrtRef(fun_info_table));
         }
     }
@@ -293,8 +363,8 @@ pub fn get_stable_ptr_table_roots() -> Vec<GHCEdge> {
             {
                 let edge_addr: *const *mut usize = &(table.addr) as *const *mut usize;
                 let edge: Slot = Slot(edge_addr as *mut TaggedClosureRef);
-                crate::util::push_slot(edge);
-                roots.push(GHCEdge::from_closure_ref(edge));
+
+                push_root(&mut roots, edge);
             }
         }
         roots

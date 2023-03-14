@@ -1,4 +1,5 @@
-use crate::stg_closures::{StgClosure, StgTSO, TaggedClosureRef};
+use crate::stg_closures::{StgClosure, StgTSO, TaggedClosureRef, StgIntCharlikeClosure};
+use crate::stg_info_table::StgInfoTable;
 use crate::types::{StgPtr, StgWord16};
 use crate::GHCVM;
 use mmtk::util::opaque_pointer::*;
@@ -28,7 +29,17 @@ mod binding {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+#[cfg(feature = "small_obj_optimisation")]
+const MIN_INTLIKE: i64 = -16;
+#[cfg(feature = "small_obj_optimisation")]
+const MAX_INTLIKE: i64 = 255;
+#[cfg(feature = "small_obj_optimisation")]
+const MIN_CHARLIKE: i64 = 0;
+#[cfg(feature = "small_obj_optimisation")]
+const MAX_CHARLIKE: i64 = 255;
+
 #[allow(improper_ctypes)]
+#[allow(dead_code)]
 extern "C" {
     pub fn closure_sizeW(p: *const StgClosure) -> u32;
     pub fn upcall_get_mutator(tls: VMMutatorThread) -> *mut Mutator<GHCVM>;
@@ -40,6 +51,49 @@ extern "C" {
     pub static n_capabilities: u32;
     pub static mut global_TSOs: *mut StgTSO;
     pub static mut stable_ptr_table: *mut spEntry;
+
+    static stg_INTLIKE_closure: *mut StgIntCharlikeClosure;
+    static stg_CHARLIKE_closure: *mut StgIntCharlikeClosure; 
+    static ghczmprim_GHCziTypes_Izh_con_info: *const StgInfoTable;
+    static ghczmprim_GHCziTypes_Czh_con_info: *const StgInfoTable;
+
+    pub static stg_TSO_info: *const StgInfoTable;
+    pub static stg_WHITEHOLE_info: *const StgInfoTable;
+    pub static stg_BLOCKING_QUEUE_CLEAN_info: *const StgInfoTable;
+    pub static stg_BLOCKING_QUEUE_DIRTY_info: *const StgInfoTable;
+}
+
+/// Is the given closure a small Int-like object? If so, returns Some(c), where c is the
+/// static Int object corresponding to the original object's value.
+#[cfg(feature = "small_obj_optimisation")]
+pub fn is_intlike_closure(obj: TaggedClosureRef) -> Option<TaggedClosureRef> {
+    let itbl = obj.get_info_table() as *const StgInfoTable;
+    let n = obj.get_payload_word(0) as i64;
+    if itbl == unsafe { ghczmprim_GHCziTypes_Izh_con_info }
+        && n >= MIN_INTLIKE
+        && n <= MAX_INTLIKE
+    {
+        let ptr = unsafe { stg_INTLIKE_closure.offset((n - MIN_INTLIKE) as isize) as *mut StgClosure};
+        Some(TaggedClosureRef::from_ptr(ptr))
+    } else {
+        None
+    }
+}
+
+/// Similar to `is_intlike_closure`, but for Char-like objects.
+#[cfg(feature = "small_obj_optimisation")]
+pub fn is_charlike_closure(obj: TaggedClosureRef) -> Option<TaggedClosureRef> {
+    let itbl = obj.get_info_table() as *const StgInfoTable;
+    let n = obj.get_payload_word(0) as i64;
+    if itbl == unsafe { ghczmprim_GHCziTypes_Czh_con_info }
+        && n >= MIN_CHARLIKE
+        && n <= MAX_CHARLIKE
+    {
+        let ptr = unsafe { stg_CHARLIKE_closure.offset((n - MIN_CHARLIKE) as isize) as *mut StgClosure};
+        Some(TaggedClosureRef::from_ptr(ptr))
+    } else {
+        None
+    }
 }
 
 #[allow(dead_code)]

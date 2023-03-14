@@ -4,11 +4,25 @@ use mmtk::util::constants::LOG_BYTES_IN_ADDRESS;
 use mmtk::util::{Address, ObjectReference};
 use mmtk::vm::edge_shape::{Edge, MemorySlice};
 
-/// A pointer to a pointer to a heap object
+/// Slot: A pointer to a pointer to a heap object
 /// i.e. a pointer to a field of a heap object
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Slot(pub *mut TaggedClosureRef);
 
+impl Slot {
+    pub fn set(&mut self, value: TaggedClosureRef) {
+        unsafe {
+            *self.0 = value;
+        }
+    }
+
+    pub fn get(&self) -> TaggedClosureRef {
+        unsafe { *self.0 }
+    }
+}
+
+/// Edge: Generalised slot
+/// Contains pointer to pointer to srt table; or standard slot
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum GHCEdge {
     /// An edge corresponding to a pointer field of a closure
@@ -32,7 +46,10 @@ impl GHCEdge {
     #[inline(never)]
     pub fn from_closure_ref(cref: Slot) -> Self {
         let r = GHCEdge::ClosureRef(cref);
+
+        #[cfg(feature = "mmtk_ghc_debug")]
         crate::util::push_node(r.load());
+
         r
     }
 }

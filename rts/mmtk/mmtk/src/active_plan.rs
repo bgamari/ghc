@@ -132,6 +132,8 @@ impl ActivePlan<GHCVM> for VMActivePlan {
 }
 
 pub fn enqueue_roots<Q: ObjectQueue>(queue: &mut Q, object: ObjectReference) {
+    #[cfg(feature = "mmtk_ghc_debug")]
     crate::util::push_node(object);
+
     queue.enqueue(object);
 }

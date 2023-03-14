@@ -10,7 +10,7 @@ use std::vec::*;
 pub unsafe extern "C" fn print_obj(obj: TaggedClosureRef) {
     let closure = Closure::from_ptr(obj.to_ptr());
     println!("obj in address {:?}:", obj.to_ptr());
-    println!("{:?}", closure);
+    println!("{closure:?}");
 
     // TODO: not working
     // match closure {

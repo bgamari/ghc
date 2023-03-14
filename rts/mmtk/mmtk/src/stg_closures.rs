@@ -44,6 +44,15 @@ pub struct ClosurePayload {}
 
 // TODO: check other instances of indexing in payload
 impl ClosurePayload {
+    /// Get the ith word of the payload as an integer
+    pub fn get_word(&self, i: usize) -> usize {
+        unsafe {
+            let ptr: *const ClosurePayload = &*self;
+            let payload: *const usize = ptr.cast();
+            *payload.offset(i as isize)
+        }
+    }
+
     pub fn get(&self, i: usize) -> TaggedClosureRef {
         unsafe {
             let ptr: *const ClosurePayload = &*self;
@@ -219,11 +228,12 @@ impl TaggedClosureRef {
     }
 
     pub fn to_object_reference(&self) -> ObjectReference {
-        ObjectReference::from_raw_address(Address::from_ptr(self))
+        ObjectReference::from_raw_address(Address::from_ptr(self.to_ptr()))
     }
 
     pub fn get_info_table(&self) -> &'static StgInfoTable {
-        unsafe { &*(*self.to_ptr()).header.info_table }
+        let p = self.to_ptr();
+        unsafe { &*(*p).header.info_table }
     }
 
     pub fn to_closure(&self) -> Closure {
@@ -249,6 +259,16 @@ impl TaggedClosureRef {
 
     pub fn get_tag(&self) -> usize {
         (self.0 as usize) & Self::TAG_BITS
+    }
+
+    pub fn get_payload_word(&self, i: usize) -> usize {
+        let closure = unsafe { &(*self.to_ptr()) };
+        closure.payload.get_word(i)
+    }
+
+    pub fn get_payload_ref(&self, i: usize) -> &mut TaggedClosureRef {
+        let closure = unsafe { &(*self.to_ptr()) };
+        closure.payload.get_ref(i)
     }
 }
 
@@ -366,6 +386,7 @@ pub struct StgTSO {
     pub bound: *mut InCall,
     pub cap: *mut Capability,
     pub trec: *mut StgTRecHeader,
+    pub label: *mut StgArrBytes,
     pub blocked_exceptions: *mut MessageThrowTo,
     pub blocking_queue: *mut StgBlockingQueue,
     pub alloc_limit: StgInt64,

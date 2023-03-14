@@ -36,7 +36,7 @@ impl Collection<GHCVM> for VMCollection {
         unsafe {
             let task = getMyTask();
             MMTK_GC_PENDING.store(false, Ordering::SeqCst);
-            let no_capability = 0 as *const Capability;
+            let no_capability = std::ptr::null::<Capability>();
             releaseAllCapabilities(n_capabilities, no_capability, task);
         }
     }
