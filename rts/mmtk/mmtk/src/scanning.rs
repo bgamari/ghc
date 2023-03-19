@@ -3,8 +3,8 @@ use crate::ghc::*;
 use crate::object_scanning::*;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
-use crate::GHCVM;
 use crate::util::push_root;
+use crate::GHCVM;
 use mmtk::util::opaque_pointer::*;
 use mmtk::util::ObjectReference;
 use mmtk::vm::{EdgeVisitor, RootsWorkFactory, Scanning};
@@ -57,7 +57,7 @@ impl Scanning<GHCVM> for VMScanning {
             let mut roots = get_stable_ptr_table_roots();
 
             let edge = IsClosureRef::to_tagged_closure_ref(&mut global_TSOs);
-            
+
             #[cfg(feature = "mmtk_ghc_debug")]
             crate::util::push_slot(edge);
 
@@ -162,9 +162,7 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             scan_PAP_payload(fun_info, payload, size, ev);
         }
         // ARR_WORDS
-        Closure::ArrBytes(_) => {
-            return;
-        }
+        Closure::ArrBytes(_) => (),
         Closure::ArrMutPtr(array) => unsafe {
             scan_mut_arr_ptrs(array, ev);
         },

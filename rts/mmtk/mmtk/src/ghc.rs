@@ -1,4 +1,4 @@
-use crate::stg_closures::{StgClosure, StgTSO, TaggedClosureRef, StgIntCharlikeClosure};
+use crate::stg_closures::{StgClosure, StgIntCharlikeClosure, StgTSO, TaggedClosureRef};
 use crate::stg_info_table::StgInfoTable;
 use crate::types::{StgPtr, StgWord16};
 use crate::GHCVM;
@@ -53,7 +53,7 @@ extern "C" {
     pub static mut stable_ptr_table: *mut spEntry;
 
     static stg_INTLIKE_closure: *mut StgIntCharlikeClosure;
-    static stg_CHARLIKE_closure: *mut StgIntCharlikeClosure; 
+    static stg_CHARLIKE_closure: *mut StgIntCharlikeClosure;
     static ghczmprim_GHCziTypes_Izh_con_info: *const StgInfoTable;
     static ghczmprim_GHCziTypes_Czh_con_info: *const StgInfoTable;
 
@@ -73,7 +73,8 @@ pub fn is_intlike_closure(obj: TaggedClosureRef) -> Option<TaggedClosureRef> {
         && n >= MIN_INTLIKE
         && n <= MAX_INTLIKE
     {
-        let ptr = unsafe { stg_INTLIKE_closure.offset((n - MIN_INTLIKE) as isize) as *mut StgClosure};
+        let ptr =
+            unsafe { stg_INTLIKE_closure.offset((n - MIN_INTLIKE) as isize) as *mut StgClosure };
         Some(TaggedClosureRef::from_ptr(ptr))
     } else {
         None
@@ -89,7 +90,8 @@ pub fn is_charlike_closure(obj: TaggedClosureRef) -> Option<TaggedClosureRef> {
         && n >= MIN_CHARLIKE
         && n <= MAX_CHARLIKE
     {
-        let ptr = unsafe { stg_CHARLIKE_closure.offset((n - MIN_CHARLIKE) as isize) as *mut StgClosure};
+        let ptr =
+            unsafe { stg_CHARLIKE_closure.offset((n - MIN_CHARLIKE) as isize) as *mut StgClosure };
         Some(TaggedClosureRef::from_ptr(ptr))
     } else {
         None

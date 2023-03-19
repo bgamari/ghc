@@ -1,6 +1,6 @@
-use crate::types::*;
 use crate::edges::GHCEdge;
 use crate::edges::Slot;
+use crate::types::*;
 
 pub unsafe fn offset_bytes<T>(ptr: *mut T, n: isize) -> *mut T {
     ptr.cast::<u8>().offset(n).cast()

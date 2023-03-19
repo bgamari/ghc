@@ -1,11 +1,11 @@
 use crate::edges::{GHCEdge, Slot};
 use crate::ghc::*;
+use crate::stg_closures::IsClosureRef;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
+use crate::types::StgClosureType::{BLACKHOLE, CONSTR_0_1};
 use crate::types::*;
-use crate::stg_closures::IsClosureRef;
 use crate::util::{push_root, push_slot};
-use crate::types::StgClosureType::{CONSTR_0_1, BLACKHOLE};
 use mmtk::vm::EdgeVisitor;
 use std::cmp::min;
 use std::mem::size_of;
@@ -34,7 +34,9 @@ pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(ev: &mut EV, slot: &mu
     let itbl = closure_ref.get_info_table();
     if itbl.type_ == CONSTR_0_1 {
         #[cfg(feature = "small_obj_optimisation")]
-        if small_obj_optimisation(closure_ref) { return }
+        if small_obj_optimisation(closure_ref) {
+            return;
+        }
     }
 
     #[cfg(feature = "mmtk_ghc_debug")]
@@ -54,16 +56,19 @@ fn indirection_shortcutting(mut slot: Slot) -> TaggedClosureRef {
 
         // check if p is a blackhole, if so, we can try update it to its indirectee
         if itbl.type_ == BLACKHOLE {
-            let indir: TaggedClosureRef = unsafe { (*(closure_ref.to_ptr() as *const StgInd)).indirectee };
+            let indir: TaggedClosureRef =
+                unsafe { (*(closure_ref.to_ptr() as *const StgInd)).indirectee };
             // if tag is zero, then we have to further check whether if indir is a blackhole
-            let is_indirection: bool = if indir.get_tag() != 0 { true } else {
+            let is_indirection: bool = if indir.get_tag() != 0 {
+                true
+            } else {
                 let r_itbl = indir.get_info_table() as *const StgInfoTable;
                 // if infotable of indir is one of these types, it means that indir is a blackhole,
                 // so p does not have a updated value yet, end of the chain
-                let is_blackhole = r_itbl == unsafe {stg_TSO_info} ||
-                                r_itbl == unsafe {stg_WHITEHOLE_info} || 
-                                r_itbl == unsafe {stg_BLOCKING_QUEUE_CLEAN_info} ||
-                                r_itbl == unsafe {stg_BLOCKING_QUEUE_DIRTY_info};
+                let is_blackhole = r_itbl == unsafe { stg_TSO_info }
+                    || r_itbl == unsafe { stg_WHITEHOLE_info }
+                    || r_itbl == unsafe { stg_BLOCKING_QUEUE_CLEAN_info }
+                    || r_itbl == unsafe { stg_BLOCKING_QUEUE_DIRTY_info };
                 is_blackhole
             };
             if is_indirection {
@@ -84,8 +89,7 @@ fn small_obj_optimisation(closure_ref: TaggedClosureRef) -> bool {
     if let Some(c) = is_intlike_closure(closure_ref) {
         *closure_ref.get_payload_ref(0) = c;
         return true;
-    } 
-    else if let Some(c) = is_charlike_closure(closure_ref) {
+    } else if let Some(c) = is_charlike_closure(closure_ref) {
         *closure_ref.get_payload_ref(0) = c;
         return true;
     }
@@ -298,11 +302,10 @@ pub fn scan_srt<EV: EdgeVisitor<GHCEdge>>(ret_info_table: &mut StgRetInfoTable, 
     match ret_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-
             #[cfg(feature = "mmtk_ghc_debug")]
-            crate::util::push_node(
-                mmtk::vm::edge_shape::Edge::load(
-                    &GHCEdge::RetSrtRef(ret_info_table)));
+            crate::util::push_node(mmtk::vm::edge_shape::Edge::load(&GHCEdge::RetSrtRef(
+                ret_info_table,
+            )));
 
             ev.visit_edge(GHCEdge::RetSrtRef(ret_info_table));
         }
@@ -320,11 +323,10 @@ pub fn scan_srt_thunk<EV: EdgeVisitor<GHCEdge>>(
     match thunk_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-
             #[cfg(feature = "mmtk_ghc_debug")]
-            crate::util::push_node(
-                mmtk::vm::edge_shape::Edge::load(
-                    &GHCEdge::ThunkSrtRef(thunk_info_table)));
+            crate::util::push_node(mmtk::vm::edge_shape::Edge::load(&GHCEdge::ThunkSrtRef(
+                thunk_info_table,
+            )));
 
             ev.visit_edge(GHCEdge::ThunkSrtRef(thunk_info_table));
         }
@@ -337,11 +339,10 @@ pub fn scan_srt_fun<EV: EdgeVisitor<GHCEdge>>(fun_info_table: &mut StgFunInfoTab
     match fun_info_table.get_srt() {
         None => (),
         Some(_srt) => {
-
             #[cfg(feature = "mmtk_ghc_debug")]
-            crate::util::push_node(
-                mmtk::vm::edge_shape::Edge::load(
-                    &GHCEdge::FunSrtRef(fun_info_table)));
+            crate::util::push_node(mmtk::vm::edge_shape::Edge::load(&GHCEdge::FunSrtRef(
+                fun_info_table,
+            )));
 
             ev.visit_edge(GHCEdge::FunSrtRef(fun_info_table));
         }

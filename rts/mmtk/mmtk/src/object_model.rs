@@ -1,10 +1,10 @@
-use mmtk::util::copy::{CopySemantics, GCWorkerCopyContext};
-use mmtk::util::{Address, ObjectReference};
-use mmtk::vm::*;
-use crate::GHCVM;
 use crate::ghc::closure_sizeW;
 use crate::stg_closures::StgClosure;
 use crate::types::StgWord;
+use crate::GHCVM;
+use mmtk::util::copy::{CopySemantics, GCWorkerCopyContext};
+use mmtk::util::{Address, ObjectReference};
+use mmtk::vm::*;
 
 pub struct VMObjectModel {}
 
@@ -14,10 +14,14 @@ pub const OBJECT_REF_OFFSET: usize = 0;
 
 impl ObjectModel<GHCVM> for VMObjectModel {
     const GLOBAL_LOG_BIT_SPEC: VMGlobalLogBitSpec = VMGlobalLogBitSpec::side_first();
-    const LOCAL_FORWARDING_POINTER_SPEC: VMLocalForwardingPointerSpec = VMLocalForwardingPointerSpec::side_first();
-    const LOCAL_FORWARDING_BITS_SPEC: VMLocalForwardingBitsSpec = VMLocalForwardingBitsSpec::side_first();
-    const LOCAL_MARK_BIT_SPEC: VMLocalMarkBitSpec = VMLocalMarkBitSpec::side_first();
-    const LOCAL_LOS_MARK_NURSERY_SPEC: VMLocalLOSMarkNurserySpec = VMLocalLOSMarkNurserySpec::side_after(Self::LOCAL_MARK_BIT_SPEC.as_spec());
+    const LOCAL_FORWARDING_POINTER_SPEC: VMLocalForwardingPointerSpec =
+        VMLocalForwardingPointerSpec::in_header(OBJECT_REF_OFFSET as isize);
+    const LOCAL_FORWARDING_BITS_SPEC: VMLocalForwardingBitsSpec =
+        VMLocalForwardingBitsSpec::side_first();
+    const LOCAL_MARK_BIT_SPEC: VMLocalMarkBitSpec =
+        VMLocalMarkBitSpec::side_after(Self::LOCAL_FORWARDING_BITS_SPEC.as_spec());
+    const LOCAL_LOS_MARK_NURSERY_SPEC: VMLocalLOSMarkNurserySpec =
+        VMLocalLOSMarkNurserySpec::side_after(Self::LOCAL_MARK_BIT_SPEC.as_spec());
 
     const OBJECT_REF_OFFSET_LOWER_BOUND: isize = OBJECT_REF_OFFSET as isize;
 
@@ -34,7 +38,9 @@ impl ObjectModel<GHCVM> for VMObjectModel {
     }
 
     fn get_current_size(object: ObjectReference) -> usize {
-        let size_w = unsafe { closure_sizeW(object.to_raw_address().to_ptr() as *const StgClosure) as usize };
+        let size_w = unsafe {
+            closure_sizeW(object.to_raw_address().to_ptr() as *const StgClosure) as usize
+        };
         size_w * std::mem::size_of::<StgWord>()
     }
 
