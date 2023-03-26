@@ -65,7 +65,7 @@ impl ObjectModel<GHCVM> for VMObjectModel {
     }
 
     fn ref_to_object_start(object: ObjectReference) -> Address {
-        object.to_raw_address().sub(OBJECT_REF_OFFSET)
+        object.to_raw_address()
     }
 
     fn ref_to_header(object: ObjectReference) -> Address {
@@ -78,7 +78,7 @@ impl ObjectModel<GHCVM> for VMObjectModel {
     }
 
     fn address_to_ref(addr: Address) -> ObjectReference {
-        ObjectReference::from_raw_address(addr.add(OBJECT_REF_OFFSET))
+        ObjectReference::from_raw_address(addr)
     }
 
     fn dump_object(_object: ObjectReference) {

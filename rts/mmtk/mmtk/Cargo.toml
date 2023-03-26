@@ -37,6 +37,7 @@ mmtk = { path = "../mmtk-core", features=[
     "work_packet_stats",
     "immix_no_nursery_copy",
     "immix_no_defrag",
+    "immix_zero_on_release"
     ]}
 
 [features]

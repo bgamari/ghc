@@ -3,9 +3,9 @@ use crate::ghc::*;
 use crate::stg_closures::IsClosureRef;
 use crate::stg_closures::*;
 use crate::stg_info_table::*;
-use crate::types::StgClosureType::{BLACKHOLE, CONSTR_0_1};
+use crate::types::StgClosureType::CONSTR_0_1;
 use crate::types::*;
-use crate::util::{push_root, push_slot};
+use crate::util::push_root;
 use mmtk::vm::EdgeVisitor;
 use std::cmp::min;
 use std::mem::size_of;
@@ -40,7 +40,7 @@ pub fn visit<EV: EdgeVisitor<GHCEdge>, Ref: IsClosureRef>(ev: &mut EV, slot: &mu
     }
 
     #[cfg(feature = "mmtk_ghc_debug")]
-    push_slot(s);
+    crate::util::push_slot(s);
 
     ev.visit_edge(GHCEdge::from_closure_ref(s));
 }
@@ -55,7 +55,7 @@ fn indirection_shortcutting(mut slot: Slot) -> TaggedClosureRef {
         let itbl = closure_ref.get_info_table();
 
         // check if p is a blackhole, if so, we can try update it to its indirectee
-        if itbl.type_ == BLACKHOLE {
+        if itbl.type_ == crate::types::StgClosureType::BLACKHOLE {
             let indir: TaggedClosureRef =
                 unsafe { (*(closure_ref.to_ptr() as *const StgInd)).indirectee };
             // if tag is zero, then we have to further check whether if indir is a blackhole

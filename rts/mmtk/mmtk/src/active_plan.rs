@@ -23,7 +23,10 @@ fn get_static_flag() -> bool {
     unsafe { STATIC_FLAG }
 }
 
-static mut ITERATOR: *const Task = std::ptr::null();
+/// This is a hack to get the mutator iterator working.
+/// true -> task.mmutator
+/// false -> task.rts_mutator
+static mut ITERATOR: (*const Task, bool) = (std::ptr::null(), true);
 
 pub struct VMActivePlan {}
 
@@ -47,18 +50,23 @@ impl ActivePlan<GHCVM> for VMActivePlan {
 
     fn reset_mutator_iterator() {
         unsafe {
-            ITERATOR = all_tasks;
+            ITERATOR = (all_tasks, true);
         }
     }
 
     fn get_next_mutator() -> Option<&'static mut Mutator<GHCVM>> {
         unsafe {
-            // println!("Next Iterator {:?}", ITERATOR);
-            // TODO: acquire all_tasks_mutex
-            if !ITERATOR.is_null() {
-                let task = ITERATOR;
-                ITERATOR = (*task).all_next;
-                let result = (*task).mmutator;
+            if !ITERATOR.0.is_null() {
+                let task = ITERATOR.0;
+                let result = match ITERATOR.1 {
+                    true => (*task).mmutator,
+                    false => (*task).rts_mutator,
+                };
+                if !ITERATOR.1 {
+                    ITERATOR = ((*task).all_next, true);
+                } else {
+                    ITERATOR = (ITERATOR.0, false);
+                }
                 Some(std::mem::transmute(result))
             } else {
                 None
