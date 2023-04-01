@@ -4,6 +4,7 @@ use super::util::*;
 use crate::ghc::closure_flags;
 use std::fmt;
 use std::ops::Deref;
+use std::ptr::addr_of;
 
 /**
  * GHC closure info tables in Rust
@@ -118,10 +119,10 @@ pub struct StgLargeBitmap {
 pub struct LargeBitMapPayload {}
 
 impl LargeBitMapPayload {
-    pub unsafe fn get_w(&self, i: usize) -> *const StgWord {
-        let ptr: *const LargeBitMapPayload = &*self;
-        let payload: *const *mut StgWord = ptr.cast();
-        *payload.offset(i as isize)
+    pub unsafe fn get_w(&self, i: usize) -> StgWord {
+        let ptr: *const LargeBitMapPayload = addr_of!(*self);
+        let payload: *const StgWord = ptr.cast();
+        *(payload.offset(i as isize))
     }
     // TODO: might want to iterate through bits as well
 }
