@@ -90,6 +90,7 @@ impl ActivePlan<GHCVM> for VMActivePlan {
                 // N.B. We don't need to maintain a list of static objects, therefore ZERO
                 *static_link =
                     TaggedClosureRef::from_address(Address::ZERO).set_tag(cur_static_flag);
+                crate::util::push_node(object);
                 enqueue_roots(queue, object);
             }
             !object_visited

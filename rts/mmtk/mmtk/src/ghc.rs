@@ -1,4 +1,4 @@
-use crate::stg_closures::{StgClosure, StgIntCharlikeClosure, StgTSO, TaggedClosureRef};
+use crate::stg_closures::{StgClosure, StgIndStatic, StgIntCharlikeClosure, StgTSO, TaggedClosureRef};
 use crate::stg_info_table::StgInfoTable;
 use crate::types::{StgPtr, StgWord16};
 use crate::GHCVM;
@@ -51,6 +51,8 @@ extern "C" {
     pub static n_capabilities: u32;
     pub static mut global_TSOs: *mut StgTSO;
     pub static mut stable_ptr_table: *mut spEntry;
+    pub static mut dyn_caf_list: *mut StgIndStatic;
+    pub static mut revertible_caf_list: *mut StgIndStatic;
 
     static stg_INTLIKE_closure: *mut StgIntCharlikeClosure;
     static stg_CHARLIKE_closure: *mut StgIntCharlikeClosure;

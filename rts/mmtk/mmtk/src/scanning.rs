@@ -63,6 +63,10 @@ impl Scanning<GHCVM> for VMScanning {
 
             roots.push(GHCEdge::from_closure_ref(edge));
 
+            // markCAFs
+            let cafs = get_caf_list_roots();
+            roots.extend(cafs);
+
             factory.create_process_edge_roots_work(roots);
         }
         // markWeakPtrList

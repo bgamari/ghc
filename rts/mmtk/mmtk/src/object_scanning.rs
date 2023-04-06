@@ -174,6 +174,10 @@ pub unsafe fn scan_mut_arr_ptrs<EV: EdgeVisitor<GHCEdge>>(
     let n_cards: StgWord =
         (array.n_ptrs + (1 << MUT_ARR_PTRS_CARD_BITS) - 1) >> MUT_ARR_PTRS_CARD_BITS;
 
+    if n_cards == 0 {
+        return;
+    }
+
     // scan card 0..n-1
     for m in 0..n_cards - 1 {
         // m-th card, iterate through 2^MUT_ARR_PTRS_CARD_BITS many elements
@@ -367,6 +371,35 @@ pub fn get_stable_ptr_table_roots() -> Vec<GHCEdge> {
 
                 push_root(&mut roots, edge);
             }
+        }
+        roots
+    }
+}
+
+/// Treat objects from CAF lists as roots
+/// See rts/sm/GCAux.c:markCAFs()
+#[inline(never)]
+pub fn get_caf_list_roots() -> Vec<GHCEdge> {
+    unsafe {
+        let mut roots: Vec<GHCEdge> = vec![];
+        let mut caf_list: *mut StgIndStatic = dyn_caf_list;
+        while (caf_list as usize | 0x3) != (0x3 as usize) {
+            // untag static bits
+            caf_list = (caf_list as usize & !0x3) as *mut StgIndStatic;
+            let edge_addr: *const TaggedClosureRef = &(*caf_list).indirectee;
+            let edge: Slot = Slot(edge_addr as *mut TaggedClosureRef);
+            push_root(&mut roots, edge);
+            caf_list = (*caf_list).static_link.to_ptr() as *mut StgIndStatic;
+        }
+
+        caf_list = revertible_caf_list;
+        while (caf_list as usize | 0x3) != (0x3 as usize) {
+            // untag static bits
+            caf_list = (caf_list as usize & !0x3) as *mut StgIndStatic;
+            let edge_addr: *const TaggedClosureRef = &(*caf_list).indirectee;
+            let edge: Slot = Slot(edge_addr as *mut TaggedClosureRef);
+            push_root(&mut roots, edge);
+            caf_list = (*caf_list).static_link.to_ptr() as *mut StgIndStatic;
         }
         roots
     }
