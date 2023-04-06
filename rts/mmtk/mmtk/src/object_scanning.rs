@@ -246,14 +246,14 @@ pub fn scan_large_bitmap<EV: EdgeVisitor<GHCEdge>>(
         let mut bitmap = unsafe { (large_bitmap.bitmap).get_w(b) };
         // word_len is the size is min(wordsize, (size_w - i) bits)
         let word_len = min(size - i, 8 * size_of::<StgWord>());
-        i += word_len;
         for j in 0..word_len {
             if (bitmap & 1) == 0 {
-                let edge = payload.get_ref(j);
+                let edge = payload.get_ref(j+i);
                 visit(ev, edge);
             }
             bitmap = bitmap >> 1;
         }
+        i += word_len;
         b += 1;
     }
 }

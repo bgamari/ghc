@@ -41,6 +41,11 @@ runCFinalizers(StgCFinalizerList *list)
 void
 runAllCFinalizers(StgWeak *list)
 {
+#if defined(MMTK_GHC)
+    // TODO: Handle weak pointers
+    return;
+#endif
+
     StgWeak *w;
     Task *task;
 
