@@ -1,10 +1,8 @@
 # re-build MMTk
 (cd rts/mmtk/mmtk && cargo build)
 # re-build ghc
+rm -rf _build/stage1/rts/
 hadrian/build --flavour=default+debug_info -j8 -VV
-
-pass_count=0
-fail_count=0
 
 # run fibo
 _build/stage1/bin/ghc -fforce-recomp -mmtk -rtsopts -threaded -debug -g3 -Lrts/mmtk/mmtk/target/debug -optl-lmmtk_ghc fibo.hs
@@ -23,5 +21,5 @@ _build/stage1/bin/ghc -fforce-recomp -mmtk -rtsopts -threaded -debug -g3 -Lrts/m
 (cd nofib/shootout/n-body/ && RUST_LOG=warn ./Main 500000 +RTS -M50M)
 
 # run ghc
-hadrian/build --flavour=default+debug_info -j8 stage1.ghc-bin.ghc.link.opts+="-mmtk -debug" -VV
-GHC=_build/stage1/bin/ghc bash build-cabal.sh
+./mmtk-build-ghc.sh
+

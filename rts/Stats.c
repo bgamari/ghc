@@ -1278,7 +1278,10 @@ stat_exitReport (void)
             Time exit_gc_cpu     = stats.gc_cpu_ns - start_exit_gc_cpu;
             Time exit_gc_elapsed = stats.gc_elapsed_ns - start_exit_gc_elapsed;
 
+#if !defined(MMTK_GHC)
+            // TODO: disable due to using MMTK GC
             WARN(exit_gc_elapsed > 0);
+#endif
 
             sum.exit_cpu_ns     = end_exit_cpu
                                       - start_exit_cpu
@@ -1287,7 +1290,9 @@ stat_exitReport (void)
                                        - start_exit_elapsed
                                        - exit_gc_elapsed;
 
+#if !defined(MMTK_GHC)
             WARN(sum.exit_elapsed_ns >= 0);
+#endif
 
             stats.mutator_cpu_ns     = start_exit_cpu
                                  - end_init_cpu

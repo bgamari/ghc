@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE UndecidableInstances  #-} -- For the (StmtLR GhcPs GhcPs (LocatedA (body GhcPs))) ExactPrint instance
+{-# OPTIONS_GHC -O0 #-}
 
 module ExactPrint
   (
