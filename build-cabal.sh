@@ -19,4 +19,4 @@ fi
 
 rm -Rf $out
 export GHC_ENVIRONMENT="-"
-exec $WRAPPER $GHC -package parsec -XHaskell2010 -hidir $out -odir $out -i$dir/Cabal -i$dir/Cabal-syntax/src -i$dir/Cabal/src $dir/Cabal/Setup.hs +RTS -M10G -s -RTS $@
+exec $WRAPPER $GHC -package parsec -XHaskell2010 -hidir $out -odir $out -i$dir/Cabal -i$dir/Cabal-syntax/src -i$dir/Cabal/src $dir/Cabal/Setup.hs +RTS -M4G -s -RTS $@

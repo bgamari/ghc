@@ -11,18 +11,6 @@ use mmtk::Mutator;
 use mmtk::ObjectQueue;
 use mmtk::Plan;
 
-static mut STATIC_FLAG: bool = false;
-
-pub fn bump_static_flag() {
-    unsafe {
-        STATIC_FLAG = !STATIC_FLAG;
-    }
-}
-
-fn get_static_flag() -> bool {
-    unsafe { STATIC_FLAG }
-}
-
 /// This is a hack to get the mutator iterator working.
 /// true -> task.mmutator
 /// false -> task.rts_mutator
@@ -82,9 +70,8 @@ impl ActivePlan<GHCVM> for VMActivePlan {
         // Modelled after evacuate_static_object, returns true if this
         // is the first time the object has been visited in this GC.
         let mut evacuate_static = |static_link: &mut TaggedClosureRef| -> bool {
-            let cur_static_flag = if get_static_flag() { 2 } else { 1 };
-            let prev_static_flag = if get_static_flag() { 1 } else { 2 };
-            // TODO: structure this flag bump differently
+            let cur_static_flag = if crate::binding().get_static_flag() { 2 } else { 1 };
+            let prev_static_flag = if crate::binding().get_static_flag() { 1 } else { 2 };
             let object_visited: bool = (static_link.get_tag() | prev_static_flag) == 3;
             if !object_visited {
                 // N.B. We don't need to maintain a list of static objects, therefore ZERO

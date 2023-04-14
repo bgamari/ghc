@@ -71,8 +71,11 @@ impl Collection<GHCVM> for VMCollection {
 
     // previously: Collection::vm_release
     fn post_forwarding(_worker: VMWorkerThread) {
-        crate::active_plan::bump_static_flag();
+        crate::binding().bump_static_flag();
     }
 
-    // TODO: handle schedule_finalization, process_weak_refs
+    // TODO: handle schedule_finalization
+    fn schedule_finalization(_tls: VMWorkerThread) {
+        unimplemented!()
+    }
 }

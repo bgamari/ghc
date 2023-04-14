@@ -3,12 +3,19 @@ extern crate mmtk;
 #[macro_use]
 extern crate lazy_static;
 
+use once_cell::sync::OnceCell;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+
 use mmtk::vm::VMBinding;
 use mmtk::MMTKBuilder;
 use mmtk::MMTK;
 
+use binding::GHCBinding;
+
 pub mod active_plan;
 pub mod api;
+pub mod binding;
 pub mod collection;
 pub mod edges;
 mod ghc;
@@ -21,6 +28,7 @@ pub mod stg_info_table;
 pub mod test;
 pub mod types;
 pub mod util;
+pub mod weak_proc;     
 
 #[cfg(test)]
 mod tests;
@@ -41,10 +49,7 @@ impl VMBinding for GHCVM {
     const MAX_ALIGNMENT: usize = 1 << 6;
 }
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
-
-/// This is used to ensure we initialize MMTk at a specified timing.
+/// This is used to ensure we initialize MMTk at a specified timingu
 pub static MMTK_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
 lazy_static! {
@@ -56,4 +61,14 @@ lazy_static! {
         MMTK_INITIALIZED.store(true, std::sync::atomic::Ordering::Relaxed);
         *ret
     };
+}
+
+
+/// Record global state for MMTk Binding
+pub static BINDING: OnceCell<GHCBinding> = OnceCell::new();
+
+pub fn binding<'b>() -> &'b GHCBinding {
+    BINDING
+        .get()
+        .expect("Attempt to use the binding before it is initialization")
 }

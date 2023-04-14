@@ -1,4 +1,4 @@
-use crate::stg_closures::{StgClosure, StgIndStatic, StgIntCharlikeClosure, StgTSO, TaggedClosureRef};
+use crate::stg_closures::*;
 use crate::stg_info_table::StgInfoTable;
 use crate::types::{StgPtr, StgWord16};
 use crate::GHCVM;
@@ -44,6 +44,8 @@ extern "C" {
     pub fn closure_sizeW(p: *const StgClosure) -> u32;
     pub fn upcall_get_mutator(tls: VMMutatorThread) -> *mut Mutator<GHCVM>;
     pub fn upcall_is_task(tls: VMThread) -> bool;
+    pub fn runSomeFinalizers(all: bool) -> bool;
+    pub fn scheduleFinalizers(cap: *const Capability, list: *const StgWeak);
     pub static closure_flags: *const StgWord16;
     pub static all_tasks: *const Task;
     pub static SPT_size: u32;

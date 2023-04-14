@@ -37,6 +37,7 @@ mmtk = { path = "../mmtk-core", features=[
     "immix_non_moving",
     "immix_zero_on_release"
     ]}
+once_cell = "1.17.0"
 
 [features]
 default = ["small_obj_optimisation", "indirection_shortcutting", "mmtk_ghc_debug"]

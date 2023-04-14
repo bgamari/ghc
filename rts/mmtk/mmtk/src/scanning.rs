@@ -5,6 +5,7 @@ use crate::stg_closures::*;
 use crate::stg_info_table::*;
 use crate::util::push_root;
 use crate::GHCVM;
+use mmtk::scheduler::GCWorker;
 use mmtk::util::opaque_pointer::*;
 use mmtk::util::ObjectReference;
 use mmtk::vm::{EdgeVisitor, RootsWorkFactory, Scanning};
@@ -128,6 +129,8 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             scan_closure_payload(&fun.payload, n_ptrs, ev);
         },
         Closure::Weak(weak) => {
+            // TODO: add_weak
+
             visit(ev, &mut weak.value);
             visit(ev, &mut weak.key);
             visit(ev, &mut weak.finalizer);
@@ -212,5 +215,14 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             "scavenge_block: strange object type={:?}, address={:?}",
             itbl.type_, itbl
         ),
+    }
+
+    fn process_weak_refs(
+        worker: &mut GCWorker<GHCVM>,
+        tracer_context: impl mmtk::vm::ObjectTracerContext<GHCVM>,
+    ) -> bool {
+      crate::binding()
+        .weak_proc.lock().unwrap()
+        .process_weak_refs(worker, tracer_context)
     }
 }

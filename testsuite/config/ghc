@@ -121,7 +121,7 @@ config.way_flags = {
     'compacting_gc': [],
     'winio': [],
     'winio_threaded': ['-threaded'],
-    'mmtk': ['-mmtk'],
+    'mmtk': ['-mmtk', "-Lrts/mmtk/mmtk/target/debug", "-lmmtk_ghc"],
    }
 
 config.way_rts_flags = {
