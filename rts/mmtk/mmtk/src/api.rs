@@ -4,6 +4,7 @@
 use crate::BUILDER;
 use crate::GHCVM;
 use crate::SINGLETON;
+use crate::binding::GHCBinding;
 use libc::c_char;
 use mmtk::memory_manager;
 use mmtk::scheduler::{GCController, GCWorker};
@@ -33,6 +34,9 @@ pub extern "C" fn mmtk_init(heap_size: usize) {
     assert!(!crate::MMTK_INITIALIZED.load(Ordering::SeqCst));
     // Initialize MMTk here
     lazy_static::initialize(&SINGLETON);
+
+    let binding = GHCBinding::new();
+    crate::BINDING.set(binding).unwrap_or_else(|_| panic!("Binding is already initialized"));
 }
 
 #[no_mangle]
@@ -276,4 +280,9 @@ pub extern "C" fn mmtk_free_with_size(addr: Address, old_size: usize) {
 #[no_mangle]
 pub extern "C" fn mmtk_free(addr: Address) {
     memory_manager::free(addr)
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_get_dead_weaks() -> *const crate::stg_closures::StgWeak {
+    crate::binding().get_dead_weaks()
 }

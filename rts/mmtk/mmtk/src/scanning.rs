@@ -39,6 +39,15 @@ impl Scanning<GHCVM> for VMScanning {
                 );
                 incall = unsafe { (*incall).next };
             }
+            // collectFreshWeakPtrs()
+            let mut weak = cap.weak_ptr_list_hd as *mut StgWeak;
+            while weak != std::ptr::null_mut() {
+                push_root(
+                    &mut roots,
+                    Slot(addr_of_mut!(weak) as *mut TaggedClosureRef),
+                );
+                weak = unsafe { (*weak).link };
+            }
         }
         // TODO: traverseSparkQueue
         factory.create_process_edge_roots_work(roots);
@@ -91,6 +100,13 @@ impl Scanning<GHCVM> for VMScanning {
     fn prepare_for_roots_re_scanning() {
         unimplemented!()
     }
+    fn process_weak_refs(
+        worker: &mut GCWorker<GHCVM>,
+        tracer_context: impl mmtk::vm::ObjectTracerContext<GHCVM>,
+    ) -> bool {
+      crate::binding().weak_proc
+        .process_weak_refs(worker, tracer_context)
+    }
 }
 
 /// Visit the pointers inside a closure, depending on its closure type
@@ -129,12 +145,7 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             scan_closure_payload(&fun.payload, n_ptrs, ev);
         },
         Closure::Weak(weak) => {
-            // TODO: add_weak
-
-            visit(ev, &mut weak.value);
-            visit(ev, &mut weak.key);
-            visit(ev, &mut weak.finalizer);
-            visit(ev, &mut weak.cfinalizers);
+            crate::binding().weak_proc.add_weak(weak);
         }
         Closure::MutVar(mut_var) => {
             visit(ev, &mut mut_var.var);
@@ -215,14 +226,5 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             "scavenge_block: strange object type={:?}, address={:?}",
             itbl.type_, itbl
         ),
-    }
-
-    fn process_weak_refs(
-        worker: &mut GCWorker<GHCVM>,
-        tracer_context: impl mmtk::vm::ObjectTracerContext<GHCVM>,
-    ) -> bool {
-      crate::binding()
-        .weak_proc.lock().unwrap()
-        .process_weak_refs(worker, tracer_context)
     }
 }

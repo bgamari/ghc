@@ -35,6 +35,11 @@ impl WeakProcessor {
 
         weak_state.process_weak_refs(worker, tracer_context)
     }
+
+    pub fn get_dead_weaks(&self) -> *const StgWeak {
+        let mut weak_state = self.weak_state.lock().unwrap();
+        weak_state.get_dead_weaks()
+    }
 }
 
 struct WeakState {
@@ -57,6 +62,17 @@ impl WeakState {
 
     pub fn add_weak(&mut self, weak: *mut StgWeak) {
         self.weak_refs.push(weak);
+    }
+
+    // Link together weak references with dead keys into a list and pass to RTS for finalization
+    pub fn get_dead_weaks(&mut self) -> *const StgWeak {
+        let mut last: *mut StgWeak = std::ptr::null_mut();
+        for weak_ref in self.dead_weak_refs.iter() {
+            let weak: &mut StgWeak = unsafe { &mut **weak_ref };
+            weak.link = last;
+            last = weak;
+        }
+        last
     }
 
     pub fn process_weak_refs(

@@ -1617,6 +1617,10 @@ scheduleDoGC (Capability **pcap, Task *task USED_IF_THREADS,
             // ensure that pcap is updated appropriately.
             *pcap = task->cap;
 
+            // Run finialisation after MMTk GC
+            StgWeak *weaks_to_finalize = mmtk_get_dead_weaks();
+            scheduleFinalizers(*pcap, weaks_to_finalize);
+
             // mmtk_alloc_slow has allocated hp_alloc bytes for us but we want
             // the mutator to be the one to advance the cursor; roll it back.
             mmtk_get_nursery_allocator(task->mmutator)->cursor = p;

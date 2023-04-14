@@ -68,7 +68,5 @@ lazy_static! {
 pub static BINDING: OnceCell<GHCBinding> = OnceCell::new();
 
 pub fn binding<'b>() -> &'b GHCBinding {
-    BINDING
-        .get()
-        .expect("Attempt to use the binding before it is initialization")
+    BINDING.get().expect("Attempt to use the binding before it is initialization")
 }
