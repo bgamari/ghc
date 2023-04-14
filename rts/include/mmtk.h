@@ -135,6 +135,8 @@ extern void mmtk_harness_begin(void* tls);
 // Generic hook to allow benchmarks to be harnessed
 extern void mmtk_harness_end(void);
 
+extern void* mmtk_get_dead_weaks(void);
+
 #ifdef __cplusplus
 }
 #endif
