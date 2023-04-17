@@ -1,6 +1,5 @@
 use std::sync::{Mutex, MutexGuard};
 use crate::stg_closures::StgWeak;
-use crate::ghc::{runSomeFinalizers, scheduleFinalizers, Capability};
 use crate::GHCVM;
 use mmtk::scheduler::GCWorker;
 use mmtk::util::{ObjectReference, Address};
@@ -40,6 +39,11 @@ impl WeakProcessor {
         let mut weak_state = self.weak_state.lock().unwrap();
         weak_state.get_dead_weaks()
     }
+
+    pub fn finish_gc_cycle(&self) {
+        let mut weak_state = self.weak_state.lock().unwrap();
+        weak_state.finish_gc_cycle();
+    }
 }
 
 struct WeakState {
@@ -72,6 +76,7 @@ impl WeakState {
             weak.link = last;
             last = weak;
         }
+        self.dead_weak_refs = vec!();
         last
     }
 
@@ -92,6 +97,7 @@ impl WeakState {
                     self.live_weak_refs.push(weak);
                     // TODO: For non-moving plan we might need to trace edge
                     tracer.trace_object(weak.key.to_object_reference());
+                    tracer.trace_object(weak.value.to_object_reference());
                     tracer.trace_object(weak.finalizer.to_object_reference());
                     tracer.trace_object(weak.cfinalizers.to_object_reference());
                 done = false;
@@ -105,6 +111,7 @@ impl WeakState {
         !done
     }
 
+
     /// Finalize dead weak references
     pub fn finish_gc_cycle(&mut self) {
         // Any weak references that remain on self.weak_refs at this point have unreachable keys.
@@ -117,13 +124,16 @@ impl WeakState {
             weak.link = last;
             last = weak;
         }
-        if !last.is_null() {
-            let cap = std::ptr::null_mut::<Capability>();
-            unsafe { scheduleFinalizers(cap, last) };
-        }
+    
+        // if !last.is_null() {
+        //     let cap = std::ptr::null_mut::<Capability>();
+        //     unsafe { scheduleFinalizers(cap, last) };
+        // }
         
+        // TODO: don't need to call finalizer in MMTK
+        // move to GHC
         // Run any pending C finalizers
-        unsafe { runSomeFinalizers(true) };
+        // unsafe { runSomeFinalizers(true) };
         
         // Prepare for next GC cycle
         self.weak_refs.append(&mut self.live_weak_refs);

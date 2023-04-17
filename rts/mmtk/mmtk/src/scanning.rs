@@ -39,7 +39,7 @@ impl Scanning<GHCVM> for VMScanning {
                 );
                 incall = unsafe { (*incall).next };
             }
-            // collectFreshWeakPtrs()
+            // scan capability weak list
             let mut weak = cap.weak_ptr_list_hd as *mut StgWeak;
             while weak != std::ptr::null_mut() {
                 push_root(

@@ -76,6 +76,6 @@ impl Collection<GHCVM> for VMCollection {
 
     // TODO: handle schedule_finalization
     fn schedule_finalization(_tls: VMWorkerThread) {
-        unimplemented!()
+        crate::binding().weak_proc.finish_gc_cycle();
     }
 }
