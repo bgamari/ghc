@@ -166,6 +166,13 @@ static void deleteAllThreads (void);
 static void deleteThread_(StgTSO *tso);
 #endif
 
+/// Assist debuging for MMTK binding with conditional breakpoints
+#if defined(MMTK_GHC)
+int push_node(void* ptr) {
+    return 1;
+}
+#endif
+
 /* ---------------------------------------------------------------------------
    Main scheduling loop.
 

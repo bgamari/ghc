@@ -100,7 +100,9 @@ scheduleFinalizers(Capability *cap, StgWeak *list)
     // n_finalizers is not necessarily zero under non-moving collection
     // because non-moving collector does not wait for the list to be consumed
     // (by doIdleGcWork()) before appending the list with more finalizers.
+#if !defined(MMTK_GHC)
     ASSERT(RtsFlags.GcFlags.useNonmoving || SEQ_CST_LOAD(&n_finalizers) == 0);
+#endif
 
     // Append finalizer_list with the new list. TODO: Perhaps cache tail of the
     // list for faster append. NOTE: We can't append `list` here! Otherwise we

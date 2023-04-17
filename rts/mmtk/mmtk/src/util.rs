@@ -1,6 +1,7 @@
 use crate::edges::GHCEdge;
 use crate::edges::Slot;
 use crate::types::*;
+use mmtk::util::ObjectReference;
 
 pub unsafe fn offset_bytes<T>(ptr: *mut T, n: isize) -> *mut T {
     ptr.cast::<u8>().offset(n).cast()
@@ -17,12 +18,7 @@ pub unsafe fn offset_from_end<Src, Target>(ptr: &Src, offset: isize) -> *const T
     (end as *const u8).offset(offset).cast()
 }
 
-#[no_mangle]
-#[cfg(feature = "mmtk_ghc_debug")]
-pub static mut bad_addr: *const u32 = std::ptr::null();
-
 /// Helper function to assist debugging
-#[no_mangle]
 #[inline(never)]
 #[cfg(feature = "mmtk_ghc_debug")]
 pub fn push_slot(ptr: Slot) {
@@ -31,12 +27,10 @@ pub fn push_slot(ptr: Slot) {
 }
 
 /// Helper function to assist debugging
-#[no_mangle]
 #[inline(never)]
 #[cfg(feature = "mmtk_ghc_debug")]
 pub fn push_node(_ptr: mmtk::util::ObjectReference) {
-    // unsafe {assert!(_ptr.to_raw_address().to_ptr() != bad_addr);}
-    ()
+    unsafe { crate::ghc::push_node(_ptr.to_raw_address().to_ptr()) };
 }
 
 /// Helper function to push (standard StgClosure) edge to root packet
@@ -45,4 +39,10 @@ pub fn push_root(roots: &mut Vec<GHCEdge>, slot: Slot) {
     push_slot(slot);
 
     roots.push(GHCEdge::from_closure_ref(slot))
+}
+
+pub fn assert_reachable(obj: ObjectReference) {
+    if obj.is_in_any_space() {
+        assert!(obj.is_reachable());
+    }
 }

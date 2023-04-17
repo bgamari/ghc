@@ -40,14 +40,7 @@ impl Scanning<GHCVM> for VMScanning {
                 incall = unsafe { (*incall).next };
             }
             // scan capability weak list
-            let mut weak = cap.weak_ptr_list_hd as *mut StgWeak;
-            while weak != std::ptr::null_mut() {
-                push_root(
-                    &mut roots,
-                    Slot(addr_of_mut!(weak) as *mut TaggedClosureRef),
-                );
-                weak = unsafe { (*weak).link };
-            }
+            push_root(&mut roots, Slot(addr_of_mut!(cap.weak_ptr_list_hd) as *mut TaggedClosureRef));
         }
         // TODO: traverseSparkQueue
         factory.create_process_edge_roots_work(roots);
@@ -94,18 +87,21 @@ impl Scanning<GHCVM> for VMScanning {
     }
 
     fn notify_initial_thread_scan_complete(_partial_scan: bool, _tls: VMWorkerThread) {}
+
     fn supports_return_barrier() -> bool {
         unimplemented!()
     }
+
     fn prepare_for_roots_re_scanning() {
         unimplemented!()
     }
+
     fn process_weak_refs(
         worker: &mut GCWorker<GHCVM>,
         tracer_context: impl mmtk::vm::ObjectTracerContext<GHCVM>,
     ) -> bool {
-      crate::binding().weak_proc
-        .process_weak_refs(worker, tracer_context)
+        crate::binding().weak_proc
+            .process_weak_refs(worker, tracer_context)
     }
 }
 
@@ -145,7 +141,11 @@ pub fn visit_closure<EV: EdgeVisitor<GHCEdge>>(closure_ref: TaggedClosureRef, ev
             scan_closure_payload(&fun.payload, n_ptrs, ev);
         },
         Closure::Weak(weak) => {
+            // can have multiple instances for one weak pointer
             crate::binding().weak_proc.add_weak(weak);
+            if !weak.link.is_null() {
+                visit(ev, &mut weak.link);
+            }
         }
         Closure::MutVar(mut_var) => {
             visit(ev, &mut mut_var.var);

@@ -41,10 +41,11 @@ const MAX_CHARLIKE: i64 = 255;
 #[allow(improper_ctypes)]
 #[allow(dead_code)]
 extern "C" {
+    pub fn push_node(ptr: *const StgClosure);
     pub fn closure_sizeW(p: *const StgClosure) -> u32;
     pub fn upcall_get_mutator(tls: VMMutatorThread) -> *mut Mutator<GHCVM>;
     pub fn upcall_is_task(tls: VMThread) -> bool;
-    pub fn runSomeFinalizers(all: bool) -> bool;
+    pub fn runCFinalizers(cfinalizers: *const StgCFinalizerList);
     pub fn scheduleFinalizers(cap: *const Capability, list: *const StgWeak);
     pub static closure_flags: *const StgWord16;
     pub static all_tasks: *const Task;
@@ -55,6 +56,7 @@ extern "C" {
     pub static mut stable_ptr_table: *mut spEntry;
     pub static mut dyn_caf_list: *mut StgIndStatic;
     pub static mut revertible_caf_list: *mut StgIndStatic;
+    pub static stg_NO_FINALIZER_closure: StgClosure;
 
     static stg_INTLIKE_closure: *mut StgIntCharlikeClosure;
     static stg_CHARLIKE_closure: *mut StgIntCharlikeClosure;

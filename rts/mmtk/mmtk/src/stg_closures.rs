@@ -968,3 +968,4 @@ is_closure!(MessageThrowTo);
 is_closure!(MessageBlackHole);
 is_closure!(MessageWakeup);
 is_closure!(StgRetInfoTable);
+is_closure!(StgWeak);
