@@ -140,7 +140,10 @@ impl WeakState {
 
 
     /// Finalize dead weak references
+    #[inline(never)]
     pub fn finish_gc_cycle(&mut self) {
+        println!("====Finish GC cycle -- MMTK finalzer====");
+
         // Any weak references that remain on self.weak_refs at this point have unreachable keys.
         std::mem::swap(&mut self.weak_refs, &mut self.dead_weak_refs);
 
