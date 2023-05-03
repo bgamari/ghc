@@ -129,6 +129,7 @@ library
         extra-library-flavours: _thr
         extra-library-flavours: _thr_mmtk, _thr_debug_mmtk
         extra-bundled-libraries: Cmmtk_ghc
+        extra-libraries: Cmmtk_ghc
         if flag(dynamic)
           extra-dynamic-library-flavours: _thr
           extra-dynamic-library-flavours: _thr_mmtk, _thr_debug_mmtk

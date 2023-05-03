@@ -295,9 +295,4 @@ defaultBuilderArgs = mconcat
 defaultPackageArgs :: Args
 defaultPackageArgs = mconcat
     [ packageArgs
-    , do ways <- getWay -- FIXME
-         (MMTK `wayUnit` ways) ? builder (Ghc LinkHs) ? mconcat
-             [ arg "-Lrts/mmtk/mmtk/target/debug"
-             , arg "-lmmtk_ghc"
-             ]
     , builder Ghc ? ghcWarningsArgs ]
