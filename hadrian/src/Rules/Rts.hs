@@ -36,11 +36,16 @@ rtsRules = priority 3 $ do
 
         -- Static libraries.
         buildPath -/- "libCffi*.a"     %> copyLibffiStatic stage
+        buildPath -/- "libCmmtk_ghc.a" %> copyMmtkGhcStatic stage
 
         -- Dynamic libraries
         buildPath -/- "libffi*.dylib*" %> copyLibffiDynamicUnix stage ".dylib"
         buildPath -/- "libffi*.so*"    %> copyLibffiDynamicUnix stage ".so"
         buildPath -/- "libffi*.dll*"   %> copyLibffiDynamicWin  stage
+
+copyMmtkGhcStatic :: Stage -> FilePath -> Action ()
+copyMmtkGhcStatic _stage target = do
+    copyFile "rts/mmtk/mmtk/target/debug/libmmtk_ghc.a" target
 
 withLibffi :: Stage -> (FilePath -> FilePath -> Action a) -> Action a
 withLibffi stage action = needLibffi stage
@@ -127,6 +132,8 @@ needRtsLibffiTargets stage = do
 
     -- Header files (in the rts build dir).
     let headers = fmap ((rtsPath -/- "include") -/-) libffiHeaderFiles
+
+    need [rtsPath -/- "libCmmtk_ghc.a"]
 
     if | jsTarget     -> return []
        | useSystemFfi -> return []
