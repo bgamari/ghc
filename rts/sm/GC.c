@@ -2256,7 +2256,11 @@ void gcCAFs(void)
 
 bool doIdleGCWork(Capability *cap STG_UNUSED, bool all)
 {
+#if defined(MMTK_GHC)
+    return false;
+#else
     return runSomeFinalizers(all);
+#endif
 }
 
 

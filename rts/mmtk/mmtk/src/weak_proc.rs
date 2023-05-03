@@ -5,8 +5,8 @@ use crate::GHCVM;
 use crate::ghc::{runCFinalizers, iter_capabilities, stg_NO_FINALIZER_closure};
 use crate::util::{assert_reachable, push_node};
 use mmtk::scheduler::GCWorker;
-use mmtk::util::ObjectReference;
 use mmtk::vm::{ObjectTracer, ObjectTracerContext};
+use mmtk::util::{Address, ObjectReference};
 
 pub struct WeakProcessor {
     weak_state: Mutex<WeakState>,
@@ -43,6 +43,7 @@ impl WeakProcessor {
         weak_state.get_dead_weaks()
     }
 
+    #[inline(never)]
     pub fn finish_gc_cycle(&self) {
         let mut weak_state = self.weak_state.lock().unwrap();
         weak_state.finish_gc_cycle();
@@ -111,6 +112,7 @@ impl WeakState {
                 } else {
                     remaining_weak_refs.insert(weak);
                 }
+                tracer.trace_object(ObjectReference::from_raw_address(Address::from_ref(weak)));
             }
         });
         
@@ -142,8 +144,6 @@ impl WeakState {
     /// Finalize dead weak references
     #[inline(never)]
     pub fn finish_gc_cycle(&mut self) {
-        println!("====Finish GC cycle -- MMTK finalzer====");
-
         // Any weak references that remain on self.weak_refs at this point have unreachable keys.
         std::mem::swap(&mut self.weak_refs, &mut self.dead_weak_refs);
 

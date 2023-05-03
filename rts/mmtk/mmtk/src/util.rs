@@ -43,6 +43,6 @@ pub fn push_root(roots: &mut Vec<GHCEdge>, slot: Slot) {
 
 pub fn assert_reachable(obj: ObjectReference) {
     if obj.is_in_any_space() {
-        assert!(obj.is_reachable());
+        assert!(obj.is_reachable(), "{:?} not reachable", obj);
     }
 }

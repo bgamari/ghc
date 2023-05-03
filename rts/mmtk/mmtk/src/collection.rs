@@ -72,10 +72,11 @@ impl Collection<GHCVM> for VMCollection {
     // previously: Collection::vm_release
     fn post_forwarding(_worker: VMWorkerThread) {
         crate::binding().bump_static_flag();
+        crate::binding().weak_proc.finish_gc_cycle();
     }
 
     // TODO: handle schedule_finalization
     fn schedule_finalization(_tls: VMWorkerThread) {
-        crate::binding().weak_proc.finish_gc_cycle();
+        // crate::binding().weak_proc.finish_gc_cycle();
     }
 }
