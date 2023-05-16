@@ -300,6 +300,9 @@ int stg_sig_install (int, int, void *);
    Ways
    -------------------------------------------------------------------------- */
 
+// Returns non-zero if the RTS is an MMTk version
+int rts_isMMTK(void);
+
 // Returns non-zero if the RTS is a profiling version
 int rts_isProfiled(void);
 
