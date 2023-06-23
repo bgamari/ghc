@@ -623,7 +623,7 @@ job arch opsys buildConfig = (jobName, Job {..})
     jobDependencies = []
     jobVariables = mconcat
       [ opsysVariables arch opsys
-      ,"TEST_ENV" =: testEnv arch opsys buildConfig
+      , "TEST_ENV" =: testEnv arch opsys buildConfig
       , "BIN_DIST_NAME" =: binDistName arch opsys buildConfig
       , "BUILD_FLAVOUR" =: flavourString jobFlavour
       , "BIGNUM_BACKEND" =: bignumString (bignumBackend buildConfig)

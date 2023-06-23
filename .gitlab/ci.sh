@@ -663,7 +663,7 @@ function test_hadrian() {
 
     info "STAGE2_TEST=$?"
 
-    fi
+  fi
 
 }
 
