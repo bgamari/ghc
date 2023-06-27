@@ -127,6 +127,10 @@ impl MemorySlice for GHCVMMemorySlice {
         }
     }
 
+    fn object(&self) -> Option<ObjectReference> {
+        None
+    }
+
     fn start(&self) -> Address {
         Address::from_ptr(unsafe { (*self.0).as_ptr_range().start })
     }

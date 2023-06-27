@@ -36,6 +36,10 @@ impl ActivePlan<GHCVM> for VMActivePlan {
         unsafe { &mut *upcall_get_mutator(tls) }
     }
 
+    fn mutators<'a>() -> Box<dyn Iterator<Item = &'a mut Mutator<GHCVM>> + 'a> {
+        unimplemented!()
+    }
+
     fn reset_mutator_iterator() {
         unsafe {
             ITERATOR = (all_tasks, true);

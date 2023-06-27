@@ -16,7 +16,7 @@ pub struct VMScanning {}
 
 impl Scanning<GHCVM> for VMScanning {
     /// Scan all capabilities' run queues.
-    fn scan_thread_roots(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<GHCEdge>) {
+    fn scan_roots_in_all_mutator_threads(_tls: VMWorkerThread, mut factory: impl RootsWorkFactory<GHCEdge>) {
         let mut roots: Vec<GHCEdge> = vec![];
         for mut cap in iter_capabilities() {
             push_root(
@@ -46,7 +46,7 @@ impl Scanning<GHCVM> for VMScanning {
         factory.create_process_edge_roots_work(roots);
     }
 
-    fn scan_thread_root(
+    fn scan_roots_in_mutator_thread(
         _tls: VMWorkerThread,
         _mutator: &'static mut Mutator<GHCVM>,
         _factory: impl RootsWorkFactory<GHCEdge>,

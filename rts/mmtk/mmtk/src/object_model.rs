@@ -52,7 +52,7 @@ impl ObjectModel<GHCVM> for VMObjectModel {
         ::std::mem::size_of::<usize>()
     }
 
-    fn get_align_offset_when_copied(_object: ObjectReference) -> isize {
+    fn get_align_offset_when_copied(_object: ObjectReference) -> usize {
         0
     }
 

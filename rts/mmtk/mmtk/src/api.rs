@@ -67,7 +67,7 @@ pub extern "C" fn mmtk_alloc(
     mutator: *mut Mutator<GHCVM>,
     size: usize,
     align: usize,
-    offset: isize,
+    offset: usize,
     mut semantics: AllocationSemantics,
 ) -> Address {
     if size
@@ -86,7 +86,7 @@ pub extern "C" fn mmtk_alloc_slow(
     mutator: *mut Mutator<GHCVM>,
     size: usize,
     align: usize,
-    offset: isize,
+    offset: usize,
 ) -> Address {
     let mutator = unsafe { &mut *mutator };
     let selector = memory_manager::get_allocator_mapping(&SINGLETON, AllocationSemantics::Default);

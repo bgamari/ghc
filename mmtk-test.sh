@@ -21,5 +21,5 @@ _build/stage1/bin/ghc -fforce-recomp -mmtk -rtsopts -threaded -debug -g3 -Lrts/m
 (cd nofib/shootout/n-body/ && RUST_LOG=warn ./Main 500000 +RTS -M50M)
 
 # run ghc
-./mmtk-build-ghc.sh
+# ./mmtk-build-ghc.sh
 
