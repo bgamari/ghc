@@ -14,7 +14,7 @@ static mut MMTK_GC_PENDING: AtomicBool = AtomicBool::new(false);
 #[allow(improper_ctypes)]
 extern "C" {
     fn getMyTask() -> *const Task;
-    fn stopAllCapabilitiesForMMTK(task: *const Task);
+    fn stopAllCapabilitiesForMMTK();
     fn releaseAllCapabilities(n_capabilities: u32, cap: *const Capability, task: *const Task);
     fn yieldCapabilityForMMTK(task: *const Task, did_gc_last: bool);
     fn upcall_spawn_gc_controller(controller: *mut GCController<GHCVM>);
@@ -27,8 +27,7 @@ impl Collection<GHCVM> for VMCollection {
         _mutator_visitor: F,
     ) {
         unsafe {
-            let task = getMyTask();
-            stopAllCapabilitiesForMMTK(task);
+            stopAllCapabilitiesForMMTK();
         }
     }
 

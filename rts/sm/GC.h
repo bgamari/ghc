@@ -50,6 +50,10 @@ extern volatile StgWord64 waitForGcThreads_spin;
 extern volatile StgWord64 waitForGcThreads_yield;
 #endif
 
+#if defined(MMTK_GHC)
+extern struct Task_ *mmtk_controller_task;
+#endif
+
 // mutable list scavenging statistics
 #if defined(DEBUG)
 typedef struct {

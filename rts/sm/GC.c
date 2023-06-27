@@ -244,6 +244,9 @@ bdescr *mark_stack_bd;     // current block in the mark stack
 StgPtr mark_sp;            // pointer to the next unallocated mark stack entry
 
 #if defined(MMTK_GHC)
+
+struct Task_ *mmtk_controller_task = NULL;
+
 struct MmtkGcWorker {
     int dummy;
 };
@@ -251,6 +254,8 @@ struct MmtkGcWorker {
 static void mmtk_controller_thread(void* controller)
 {
     void *tls = stgMallocBytes(sizeof(struct MmtkGcWorker), "mmtk_controller_thread");
+    ASSERT(mmtk_controller_task == NULL);
+    mmtk_controller_task = myTask();
     mmtk_start_control_collector(tls, controller);
 }
 

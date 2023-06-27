@@ -1449,8 +1449,9 @@ void stopAllCapabilitiesWith (Capability **pCap, Task *task, SyncType sync_type)
 #endif
 
 #if defined(MMTK_GHC)
-void stopAllCapabilitiesForMMTK (Task *task) {
-    stopAllCapabilitiesWith (NULL, task, SYNC_GC_MMTK);
+void stopAllCapabilitiesForMMTK () {
+    ASSERT(mmtk_controller_task != NULL);
+    stopAllCapabilitiesWith (NULL, mmtk_controller_task, SYNC_GC_MMTK);
 }
 #endif
 
