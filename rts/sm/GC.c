@@ -255,7 +255,7 @@ static void mmtk_controller_thread(void* controller)
 {
     void *tls = stgMallocBytes(sizeof(struct MmtkGcWorker), "mmtk_controller_thread");
     ASSERT(mmtk_controller_task == NULL);
-    mmtk_controller_task = myTask();
+    mmtk_controller_task = getMyTask();
     mmtk_start_control_collector(tls, controller);
 }
 
