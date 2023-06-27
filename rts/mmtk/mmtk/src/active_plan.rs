@@ -11,10 +11,50 @@ use mmtk::Mutator;
 use mmtk::ObjectQueue;
 use mmtk::Plan;
 
-/// This is a hack to get the mutator iterator working.
-/// true -> task.mmutator
-/// false -> task.rts_mutator
-static mut ITERATOR: (*const Task, bool) = (std::ptr::null(), true);
+use core::marker::PhantomData;
+
+pub struct MutatorIterator<'a> {
+    task: *const Task,
+
+    /// true -> task.mmutator
+    /// false -> task.rts_mutator
+    which: bool,
+    _marker: PhantomData<&'a Task>,
+}
+
+impl<'a> MutatorIterator<'a> {
+    pub unsafe fn new() -> Self {
+        MutatorIterator {
+            task: all_tasks,
+            which: true,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<'a> Iterator for MutatorIterator<'a> {
+    type Item = &'a mut mmtk::Mutator<GHCVM>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            if !self.task.is_null() {
+                let result = match self.which {
+                    true => (*self.task).mmutator,
+                    false => (*self.task).rts_mutator,
+                };
+                if !self.which {
+                    self.task = (*self.task).all_next;
+                    self.which = true;
+                } else {
+                    self.which = false;
+                }
+                Some(std::mem::transmute(result))
+            } else {
+                None
+            }
+        }
+    }
+}
 
 pub struct VMActivePlan {}
 
@@ -37,32 +77,8 @@ impl ActivePlan<GHCVM> for VMActivePlan {
     }
 
     fn mutators<'a>() -> Box<dyn Iterator<Item = &'a mut Mutator<GHCVM>> + 'a> {
-        unimplemented!()
-    }
-
-    fn reset_mutator_iterator() {
         unsafe {
-            ITERATOR = (all_tasks, true);
-        }
-    }
-
-    fn get_next_mutator() -> Option<&'static mut Mutator<GHCVM>> {
-        unsafe {
-            if !ITERATOR.0.is_null() {
-                let task = ITERATOR.0;
-                let result = match ITERATOR.1 {
-                    true => (*task).mmutator,
-                    false => (*task).rts_mutator,
-                };
-                if !ITERATOR.1 {
-                    ITERATOR = ((*task).all_next, true);
-                } else {
-                    ITERATOR = (ITERATOR.0, false);
-                }
-                Some(std::mem::transmute(result))
-            } else {
-                None
-            }
+            Box::new(MutatorIterator::new())
         }
     }
 
