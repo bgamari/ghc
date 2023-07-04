@@ -2580,6 +2580,8 @@ resumeThread (void *task_)
 
     incall = task->incall;
     cap = incall->suspended_cap;
+    // historically we assume task->cap is NULL
+    ASSERT!(task->cap == NULL);
     task->cap = cap;
 
     // Wait for permission to re-enter the RTS with the result.
@@ -2882,7 +2884,7 @@ performGC_(bool force_major)
     // TODO: do we need to traceTask*() here?
 
 #if defined(MMTK_GHC)
-    mmtk_handle_user_collection_request(cap);
+    mmtk_handle_user_collection_request(getMyTask());
 #else
     waitForCapability(&cap,task);
     scheduleDoGC(&cap,task,force_major,false,false);
