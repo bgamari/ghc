@@ -468,14 +468,22 @@ closeNursery profile tscp tso = do
     
     mmtk_path = do
       bump_alloc_reg <- CmmLocal <$> newTemp (bWord platform)
+      let is_valid_nursery = cmmNeWord platform (CmmReg hpReg) (zeroExpr platform)
+      let apply_offset = catAGraphs [
+              -- Hp += WORD_SIZE
+              mkAssign hpReg $ cmmOffsetW platform (CmmReg hpReg) 1
+            ]
+
+      fixup_code <- mkCmmIfThenUniq tscp is_valid_nursery apply_offset (Just True)
+
       pure $ catAGraphs [
         mkAssign bump_alloc_reg (mmtkBumpAllocator platform),
 
+        fixup_code,
+
         -- P_[BumpAlloc->cursor] = Hp + WORD_SIZE
         let cursor_ptr = bumpAllocator_cursor platform bump_alloc_reg
-        in mkStore cursor_ptr (cmmOffsetW platform (CmmReg hpReg) 1)
-
-        -- TODO: update alloc
+        in mkStore cursor_ptr (CmmReg hpReg)
         ]
 
 

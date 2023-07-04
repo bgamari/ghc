@@ -2581,7 +2581,7 @@ resumeThread (void *task_)
     incall = task->incall;
     cap = incall->suspended_cap;
     // historically we assume task->cap is NULL
-    ASSERT!(task->cap == NULL);
+    ASSERT(task->cap == NULL);
     task->cap = cap;
 
     // Wait for permission to re-enter the RTS with the result.

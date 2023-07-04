@@ -71,6 +71,10 @@ bool     getNewNursery        (Capability *cap);
 INLINE_HEADER
 bool doYouWantToGC(Capability *cap)
 {
+#if defined(MMTK_GHC)
+   // TODO: handle this in more careful way
+   return false;
+#endif
     // This is necessarily approximate since otherwise we would need to take
     // SM_LOCK to safely look at n_new_large_words.
     TSAN_ANNOTATE_BENIGN_RACE(&g0->n_new_large_words, "doYouWantToGC(n_new_large_words)");
