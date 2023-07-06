@@ -260,6 +260,15 @@ function setup() {
     *) ;;
   esac
 
+  if [ "$DOWNLOAD_RUST" = "YES" ]; then
+    # TODO: Move toolchain installation into Docker image
+    sudo apt-get update
+    sudo apt-get install clang
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > get-rustup.sh
+    sh ./get-rustup.sh -y
+    source "$HOME/.cargo/env"
+  fi
+
   cabal_update || fail "cabal update failed"
 
   # Make sure that git works
@@ -513,6 +522,13 @@ function build_hadrian() {
     fail "BIN_DIST_PREP_TAR_COMP must not be set for hadrian (you mean BIN_DIST_NAME)"
   fi
 
+  if [ -n "$MMTK_PLAN" ]; then
+    hadrian/build \
+        _build/stage1/rts/build/include/ghcautoconf.h \
+        _build/stage1/rts/build/include/ghcplatform.h
+    ( cd rts/mmtk/mmtk; cargo build --release )
+  fi
+
   check_release_build
 
   if [[ -n "${REINSTALL_GHC:-}" ]]; then
@@ -659,11 +675,12 @@ function test_hadrian() {
       --summary-junit=./junit.xml \
       --test-have-intree-files \
       --test-compiler="${test_compiler}" \
+      ${HADRIAN_TEST_ARGS} \
       "runtest.opts+=${RUNTEST_ARGS:-}" || fail "hadrian main testsuite"
 
     info "STAGE2_TEST=$?"
 
-    fi
+  fi
 
 }
 

@@ -593,6 +593,7 @@ extern char **environ;
       RTS_PROF_SYMBOLS                                                  \
       RTS_LIBDW_SYMBOLS                                                 \
       SymI_HasProto(StgReturn)                                          \
+      SymI_NeedsDataProto(is_MMTk)                                          \
       SymI_HasDataProto(stg_gc_noregs)                                      \
       SymI_HasDataProto(stg_ret_v_info)                                     \
       SymI_HasDataProto(stg_ret_p_info)                                     \

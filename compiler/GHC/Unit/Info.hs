@@ -217,6 +217,7 @@ unitHsLibs namever ways0 p = map (mkDynName . addSuffix . ST.unpack) (unitLibrar
         mkDynName x
          | not (ways0 `hasWay` WayDyn) = x
          | "HS" `isPrefixOf` x         = x ++ dynLibSuffix namever
+         | x == "Cmmtk_ghc" = x -- FIXME: This is just horrendous but better than duplicating
            -- For non-Haskell libraries, we use the name "Cfoo". The .a
            -- file is libCfoo.a, and the .so is libfoo.so. That way the
            -- linker knows what we mean for the vanilla (-lCfoo) and dyn

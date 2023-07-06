@@ -206,7 +206,7 @@ wayOptl _ WayDebug      = []
 wayOptl _ WayDyn        = []
 wayOptl _ WayProf       = []
 -- wayOptl _ WayTracing    = []
-wayOptl _ WayMMTK       = []
+wayOptl _ WayMMTK       = ["-lCmmtk_ghc"]
 
 -- | Pass these options to the preprocessor when enabling this way
 wayOptP :: Platform -> Way -> [String]

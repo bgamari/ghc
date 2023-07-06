@@ -127,9 +127,10 @@ data BuildConfig
                 , crossTarget    :: Maybe String
                 , crossEmulator  :: CrossEmulator
                 , configureWrapper :: Maybe String
-                , fullyStatic    :: Bool
+                , fullyStatic      :: Bool
                 , tablesNextToCode :: Bool
-                , threadSanitiser :: Bool
+                , threadSanitiser  :: Bool
+                , checkMmtk        :: Bool
                 }
 
 -- Extra arguments to pass to ./configure due to the BuildConfig
@@ -174,6 +175,7 @@ vanilla = BuildConfig
   , fullyStatic = False
   , tablesNextToCode = True
   , threadSanitiser = False
+
   }
 
 nativeInt :: BuildConfig
@@ -219,6 +221,9 @@ tsan = vanilla { threadSanitiser = True }
 
 noTntc :: BuildConfig
 noTntc = vanilla { tablesNextToCode = False }
+
+mmtk :: BuildConfig
+mmtk = vanilla { checkMmtk = True }
 
 -----------------------------------------------------------------------------
 -- Platform specific variables
@@ -623,7 +628,7 @@ job arch opsys buildConfig = (jobName, Job {..})
     jobDependencies = []
     jobVariables = mconcat
       [ opsysVariables arch opsys
-      ,"TEST_ENV" =: testEnv arch opsys buildConfig
+      , "TEST_ENV" =: testEnv arch opsys buildConfig
       , "BIN_DIST_NAME" =: binDistName arch opsys buildConfig
       , "BUILD_FLAVOUR" =: flavourString jobFlavour
       , "BIGNUM_BACKEND" =: bignumString (bignumBackend buildConfig)
@@ -637,6 +642,14 @@ job arch opsys buildConfig = (jobName, Job {..})
           Emulator s       -> "CROSS_EMULATOR" =: s
           NoEmulatorNeeded -> mempty
       , if withNuma buildConfig then "ENABLE_NUMA" =: "1" else mempty
+      , if checkMmtk buildConfig
+          then mconcat [ "MMTK_PLAN" =: "Immix"
+                       , "MMTK_THREADS" =: "1"
+                       , "RUST_LOG" =: "error"
+                       , "DOWNLOAD_RUST" =: "YES"
+                       , "HADRIAN_TEST_ARGS" =: "--test-way=mmtk"
+                       ]
+          else mempty
       ]
 
     jobArtifacts = Artifacts
@@ -815,6 +828,7 @@ jobs = Map.fromList $ concatMap flattenJobGroup $
         )
         { bignumBackend = Native
         }
+     , validateBuilds Amd64 (Linux Debian11) mmtk
      ]
 
   where
