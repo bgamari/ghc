@@ -350,6 +350,8 @@ def expect_fail_for( ways: List[WayName] ):
 
     return helper
 
+def expect_broken_mmtk( bug: IssueNumber ):
+    return expect_broken(bug)
 
 def expect_broken( bug: IssueNumber ):
     """
