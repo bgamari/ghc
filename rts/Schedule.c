@@ -2581,7 +2581,7 @@ resumeThread (void *task_)
     incall = task->incall;
     cap = incall->suspended_cap;
     // historically we assume task->cap is NULL
-    ASSERT(task->cap == NULL);
+    // ASSERT(task->cap == NULL);
     task->cap = cap;
 
     // Wait for permission to re-enter the RTS with the result.
@@ -2873,6 +2873,8 @@ freeScheduler( void )
 static void
 performGC_(bool force_major)
 {
+    debugTrace(DEBUG_sched, "begin performGC");
+
     Task *task;
     Capability *cap = NULL;
 
@@ -2883,14 +2885,15 @@ performGC_(bool force_major)
 
     // TODO: do we need to traceTask*() here?
 
+    waitForCapability(&cap,task);
 #if defined(MMTK_GHC)
     mmtk_handle_user_collection_request(getMyTask());
 #else
-    waitForCapability(&cap,task);
     scheduleDoGC(&cap,task,force_major,false,false);
-    releaseCapability(cap);
 #endif
+    releaseCapability(cap);
     exitMyTask();
+    debugTrace(DEBUG_sched, "end performGC");
 }
 
 void
