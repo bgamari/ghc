@@ -2873,8 +2873,6 @@ freeScheduler( void )
 static void
 performGC_(bool force_major)
 {
-    debugTrace(DEBUG_sched, "begin performGC");
-
     Task *task;
     Capability *cap = NULL;
 
@@ -2893,7 +2891,6 @@ performGC_(bool force_major)
 #endif
     releaseCapability(cap);
     exitMyTask();
-    debugTrace(DEBUG_sched, "end performGC");
 }
 
 void
