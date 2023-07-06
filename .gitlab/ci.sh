@@ -260,7 +260,7 @@ function setup() {
     *) ;;
   esac
 
-  if [ "$DOWNLOAD_RUST" = "YES" ]; then
+  if [ -n "${DOWNLOAD_RUST:-}" ]; then
     # TODO: Move toolchain installation into Docker image
     sudo apt-get update
     sudo apt-get install clang
